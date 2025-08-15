@@ -10,6 +10,23 @@ const nextConfig = {
   },
   // Ensure proper transpilation
   transpilePackages: ['@supabase/supabase-js'],
+  // Add experimental features for better compatibility
+  experimental: {
+    // Disable app directory features that might cause issues
+    appDir: true,
+  },
+  // Ensure proper webpack configuration
+  webpack: (config, { isServer }) => {
+    // Ensure proper module resolution
+    config.resolve.fallback = {
+      ...config.resolve.fallback,
+      fs: false,
+      net: false,
+      tls: false,
+    };
+    
+    return config;
+  },
 }
 
 module.exports = nextConfig
