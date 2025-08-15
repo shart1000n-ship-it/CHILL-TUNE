@@ -10,11 +10,6 @@ const nextConfig = {
   },
   // Ensure proper transpilation
   transpilePackages: ['@supabase/supabase-js'],
-  // Add experimental features for better compatibility
-  experimental: {
-    // Disable app directory features that might cause issues
-    appDir: true,
-  },
   // Ensure proper webpack configuration
   webpack: (config, { isServer }) => {
     // Ensure proper module resolution
