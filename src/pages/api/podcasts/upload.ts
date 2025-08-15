@@ -66,7 +66,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       data: { userId, title, fileUrl: publicUrl, durationSec: durationSec || null },
     });
     return res.status(200).json({ ok: true, episode: row });
-  } catch (e) {
+  } catch {
     return res.status(500).json({ error: "Upload failed" });
   }
 }

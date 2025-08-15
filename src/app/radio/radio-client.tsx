@@ -1,7 +1,7 @@
 "use client";
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Room, RoomEvent, createLocalAudioTrack, createLocalVideoTrack, ConnectionState } from "livekit-client";
 // If Socket.IO is disabled (e.g., on Vercel), we will use Supabase Realtime for chat
 import io, { Socket } from "socket.io-client";
@@ -66,7 +66,7 @@ export default function RadioClient() {
   const [needUserGesture, setNeedUserGesture] = useState<boolean>(false);
   // Default to an R&B stream
   const [currentStreamIdx, setCurrentStreamIdx] = useState<number>(0);
-  const [currentStreamLabel, setCurrentStreamLabel] = useState<string>("PowerHitz (Pure R&B)");
+
 
   const [midiEnabled, setMidiEnabled] = useState<boolean>(false);
   const [midiStatus, setMidiStatus] = useState<string>("MIDI not enabled");
@@ -511,15 +511,14 @@ export default function RadioClient() {
     []
   );
 
-  function setStreamByIndex(nextIndex: number) {
+  const setStreamByIndex = useCallback((nextIndex: number) => {
     const audio = audioRef.current;
     if (!audio) return;
     const idx = ((nextIndex % streamCandidates.length) + streamCandidates.length) % streamCandidates.length;
     const chosen = streamCandidates[idx];
     audio.src = chosen.url;
     setCurrentStreamIdx(idx);
-    setCurrentStreamLabel(chosen.label);
-  }
+  }, [streamCandidates]);
 
   useEffect(() => {
     if (!baseUrl) return;
@@ -546,7 +545,7 @@ export default function RadioClient() {
         socket.off("chat:message", onMessage);
       };
     }
-  }, [baseUrl]);
+  }, [baseUrl, supabase]);
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -577,7 +576,7 @@ export default function RadioClient() {
       audio.removeEventListener("pause", onPause);
       audio.removeEventListener("error", onError as any);
     };
-  }, [currentStreamIdx]);
+  }, [currentStreamIdx, setStreamByIndex]);
 
   function togglePlay() {
     const audio = audioRef.current;
@@ -638,7 +637,7 @@ export default function RadioClient() {
         const updated = Array.from(access.inputs.values());
         setMidiInputs(updated);
       };
-    } catch (err) {
+    } catch {
       setMidiStatus("Failed to enable MIDI");
     }
   }

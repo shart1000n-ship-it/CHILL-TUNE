@@ -30,7 +30,7 @@ export default async function handler(
     io.on("connection", async (socket) => {
       const token = await getToken({ req: socket.request as unknown as NextApiRequest });
       const userName = (typeof token?.name === "string" ? token.name : undefined) || "Guest";
-      const _userId = (typeof token?.sub === "string" ? token.sub : undefined) || "guest";
+
       const userImage = (token && typeof (token as JWT).picture === "string") ? ((token as JWT).picture as string) : undefined;
 
       socket.on(
