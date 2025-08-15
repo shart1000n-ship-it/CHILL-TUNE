@@ -1,5 +1,5 @@
 "use client";
-/* eslint-disable @typescript-eslint/no-explicit-any */
+
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Room, RoomEvent, createLocalAudioTrack, createLocalVideoTrack, ConnectionState } from "livekit-client";
