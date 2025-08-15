@@ -9,4 +9,4 @@ Online Hip-Hop & R&B Radio Station
 - Podcast recording
 - Admin controls
 
-<!-- Updated for Vercel deployment -->
+<!-- Ready for Netlify deployment - v2 -->
