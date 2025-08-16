@@ -962,21 +962,76 @@ export default function RadioClient() {
           </div>
           
           {isSignedIn && (
-            <div className="flex space-x-2">
-              <input
-                type="text"
-                placeholder="Type your message..."
-                value={newMessage}
-                onChange={(e) => setNewMessage(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
-                className="flex-1 border border-slate-600 bg-slate-700 text-white rounded-lg px-3 py-2 placeholder-slate-400"
-              />
-              <button
-                onClick={sendMessage}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg"
-              >
-                Send
-              </button>
+            <div className="space-y-3">
+              {/* Emoji Reactions */}
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={() => setNewMessage(prev => prev + ' 🎧')}
+                  className="bg-slate-700 hover:bg-slate-600 text-white px-3 py-2 rounded-lg text-lg transition-colors"
+                >
+                  🎧
+                </button>
+                <button
+                  onClick={() => setNewMessage(prev => prev + ' 🎵')}
+                  className="bg-slate-700 hover:bg-slate-600 text-white px-3 py-2 rounded-lg text-lg transition-colors"
+                >
+                  🎵
+                </button>
+                <button
+                  onClick={() => setNewMessage(prev => prev + ' 🔥')}
+                  className="bg-slate-700 hover:bg-slate-600 text-white px-3 py-2 rounded-lg text-lg transition-colors"
+                >
+                  🔥
+                </button>
+                <button
+                  onClick={() => setNewMessage(prev => prev + ' 💯')}
+                  className="bg-slate-700 hover:bg-slate-600 text-white px-3 py-2 rounded-lg text-lg transition-colors"
+                >
+                  💯
+                </button>
+                <button
+                  onClick={() => setNewMessage(prev => prev + ' 🎤')}
+                  className="bg-slate-700 hover:bg-slate-600 text-white px-3 py-2 rounded-lg text-lg transition-colors"
+                >
+                  🎤
+                </button>
+                <button
+                  onClick={() => setNewMessage(prev => prev + ' 🎶')}
+                  className="bg-slate-700 hover:bg-slate-600 text-white px-3 py-2 rounded-lg text-lg transition-colors"
+                >
+                  🎶
+                </button>
+                <button
+                  onClick={() => setNewMessage(prev => prev + ' 🌟')}
+                  className="bg-slate-700 hover:bg-slate-600 text-white px-3 py-2 rounded-lg text-lg transition-colors"
+                >
+                  🌟
+                </button>
+                <button
+                  onClick={() => setNewMessage(prev => prev + ' 🚀')}
+                  className="bg-slate-700 hover:bg-slate-600 text-white px-3 py-2 rounded-lg text-lg transition-colors"
+                >
+                  🚀
+                </button>
+              </div>
+              
+              {/* Message Input */}
+              <div className="flex space-x-2">
+                <input
+                  type="text"
+                  placeholder="Type your message..."
+                  value={newMessage}
+                  onChange={(e) => setNewMessage(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
+                  className="flex-1 border border-slate-600 bg-slate-700 text-white rounded-lg px-3 py-2 placeholder-slate-400"
+                />
+                <button
+                  onClick={sendMessage}
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg"
+                >
+                  Send
+                </button>
+              </div>
             </div>
           )}
         </div>
