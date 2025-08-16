@@ -242,11 +242,26 @@ export default function RadioClient() {
         return;
       }
 
-      // For now, simulate going live
-      // In production, you'd integrate Twilio Video here
+      // Get user media for audio streaming
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        audio: true,
+        video: false 
+      });
+
+      // Create audio context for streaming
+      const audioContext = new AudioContext();
+      const source = audioContext.createMediaStreamSource(stream);
+      const destination = audioContext.createMediaStreamDestination();
+      source.connect(destination);
+
+      // For now, simulate going live with actual audio capture
       setIsLive(true);
       setOnAirTime(0);
-      alert('🎙️ Going Live with Audio! (Twilio integration ready)');
+      alert('🎙️ Going Live with Audio! Audio stream captured successfully.');
+      
+      // Store the stream for later use
+      (window as any).audioStream = stream;
+      
     } catch (error) {
       console.error('Failed to go live:', error);
       // Fallback to simulated live mode
@@ -267,12 +282,45 @@ export default function RadioClient() {
         return;
       }
 
-      // For now, simulate going live
-      // In production, you'd integrate Twilio Video here
+      // Get user media for video streaming
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        audio: true,
+        video: {
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+          facingMode: 'user'
+        }
+      });
+
+      // Create video element to show the stream
+      const videoElement = document.createElement('video');
+      videoElement.srcObject = stream;
+      videoElement.autoplay = true;
+      videoElement.muted = true;
+      videoElement.style.width = '100%';
+      videoElement.style.height = '300px';
+      videoElement.style.borderRadius = '8px';
+      videoElement.style.marginTop = '10px';
+
+      // Add video to the DJ console
+      const djConsole = document.querySelector('[data-dj-console]');
+      if (djConsole) {
+        const videoContainer = document.createElement('div');
+        videoContainer.className = 'bg-gray-700 rounded-lg p-4 mt-4';
+        videoContainer.innerHTML = '<h4 class="text-white font-semibold mb-2">📹 Live Video Stream</h4>';
+        videoContainer.appendChild(videoElement);
+        djConsole.appendChild(videoContainer);
+      }
+
+      // For now, simulate going live with actual video capture
       setIsVideoLive(true);
       setIsLive(true);
       setOnAirTime(0);
-      alert('📹 Going Live with Video! (Twilio integration ready)');
+      alert('📹 Going Live with Video! Video stream captured and displayed.');
+      
+      // Store the stream for later use
+      (window as any).videoStream = stream;
+      
     } catch (error) {
       console.error('Failed to go live:', error);
       // Fallback to simulated live mode
@@ -477,7 +525,7 @@ export default function RadioClient() {
       </div>
 
       {/* Professional DJ Console */}
-      <div className="bg-gradient-to-r from-gray-900 to-gray-800 rounded-lg p-6 shadow-2xl border border-gray-700">
+      <div className="bg-gradient-to-r from-gray-900 to-gray-800 rounded-lg p-6 shadow-2xl border border-gray-700" data-dj-console>
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-3xl font-bold text-white">🎛️ Professional DJ Console</h2>
           <div className="text-right">
