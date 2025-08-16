@@ -76,7 +76,7 @@ export default function RadioClient() {
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentStreamIndex(prev => (prev + 1) % STREAMS.length);
-    }, 30000); // Change every 30 seconds
+    }, 30000);
 
     return () => clearInterval(interval);
   }, []);
@@ -143,7 +143,6 @@ export default function RadioClient() {
   // Chat functionality
   useEffect(() => {
     if (process.env.NEXT_PUBLIC_DISABLE_SOCKET_IO === 'true') {
-      // Use Supabase Realtime for chat
       const channel = supabase.channel('chat');
       
       channel.on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, (payload: any) => {
@@ -175,7 +174,6 @@ export default function RadioClient() {
     setMessages(prev => [...prev, message]);
     setNewMessage('');
 
-    // Save to Supabase if available
     try {
       await supabase.from('messages').insert([message]);
     } catch (error) {
@@ -220,10 +218,10 @@ export default function RadioClient() {
         
         midiAccess.inputs.forEach((input) => {
           input.onmidimessage = (event) => {
-            if (event.data && event.data[0] === 176) { // Control Change
-              if (event.data[1] === 7) { // Volume
+            if (event.data && event.data[0] === 176) {
+              if (event.data[1] === 7) {
                 setVolume(event.data[2] / 127);
-              } else if (event.data[1] === 8) { // Crossfader
+              } else if (event.data[1] === 8) {
                 setCrossfader(event.data[2] / 127);
               }
             }
@@ -237,7 +235,6 @@ export default function RadioClient() {
 
   const goLiveAudio = async () => {
     try {
-      // Check if Twilio is configured
       if (!process.env.NEXT_PUBLIC_TWILIO_ACCOUNT_SID) {
         alert('Twilio is not configured. Audio streaming will be simulated.');
         setIsLive(true);
@@ -245,29 +242,24 @@ export default function RadioClient() {
         return;
       }
 
-      // Get user media for audio streaming
       const stream = await navigator.mediaDevices.getUserMedia({ 
         audio: true,
         video: false 
       });
-
-      // Create audio context for streaming
+    
       const audioContext = new AudioContext();
       const source = audioContext.createMediaStreamSource(stream);
       const destination = audioContext.createMediaStreamDestination();
       source.connect(destination);
-
-      // For now, simulate going live with actual audio capture
+    
       setIsLive(true);
       setOnAirTime(0);
-      alert('🎙️ Going Live with Audio! Audio stream captured successfully.');
+      alert('Going Live with Audio! Audio stream captured successfully.');
       
-      // Store the stream for later use
       (window as any).audioStream = stream;
       
     } catch (error) {
       console.error('Failed to go live:', error);
-      // Fallback to simulated live mode
       alert('Live streaming failed, but you can still use the DJ console in simulated mode.');
       setIsLive(true);
       setOnAirTime(0);
@@ -276,7 +268,6 @@ export default function RadioClient() {
 
   const goLiveVideo = async () => {
     try {
-      // Check if Twilio is configured
       if (!process.env.NEXT_PUBLIC_TWILIO_ACCOUNT_SID) {
         alert('Twilio is not configured. Video streaming will be simulated.');
         setIsVideoLive(true);
@@ -285,7 +276,6 @@ export default function RadioClient() {
         return;
       }
 
-      // Get user media for video streaming
       const stream = await navigator.mediaDevices.getUserMedia({ 
         audio: true,
         video: {
@@ -295,7 +285,6 @@ export default function RadioClient() {
         }
       });
 
-      // Display video in the video live screen
       const videoScreen = document.getElementById('video-live-screen');
       if (videoScreen) {
         videoScreen.innerHTML = `
@@ -313,18 +302,15 @@ export default function RadioClient() {
         }
       }
 
-      // For now, simulate going live with actual video capture
       setIsVideoLive(true);
       setIsLive(true);
       setOnAirTime(0);
-      alert('📹 Going Live with Video! Video stream captured and displayed.');
+      alert('Going Live with Video! Video stream captured and displayed.');
       
-      // Store the stream for later use
       (window as any).videoStream = stream;
       
     } catch (error) {
       console.error('Failed to go live:', error);
-      // Fallback to simulated live mode
       alert('Live streaming failed, but you can still use the DJ console in simulated mode.');
       setIsVideoLive(true);
       setIsLive(true);
@@ -336,7 +322,7 @@ export default function RadioClient() {
     setIsLive(false);
     setIsVideoLive(false);
     setOnAirTime(0);
-    alert('🛑 Live streaming stopped!');
+    alert('Live streaming stopped!');
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -424,15 +410,14 @@ export default function RadioClient() {
 
   return (
     <div className="space-y-6">
-      {/* Audio Player */}
       <div className="bg-white rounded-lg p-6 shadow-lg">
-        <h2 className="text-2xl font-bold text-gray-900 mb-4">🎵 Now Playing</h2>
+        <h2 className="text-2xl font-bold text-gray-900 mb-4">Now Playing</h2>
         <div className="flex items-center space-x-4">
           <button
             onClick={handlePlayPause}
             className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg font-semibold transition-colors"
           >
-            {isPlaying ? '⏸️ Pause' : '▶️ Play'}
+            {isPlaying ? 'Pause' : 'Play'}
           </button>
           <div className="flex-1">
             <div className="text-lg font-semibold text-gray-900">
@@ -441,7 +426,6 @@ export default function RadioClient() {
             <div className="text-sm text-gray-600">Live Stream</div>
           </div>
           <div className="flex items-center space-x-2">
-            <span className="text-sm text-gray-600">🔊</span>
             <input
               type="range"
               min="0"
@@ -463,9 +447,8 @@ export default function RadioClient() {
         />
       </div>
 
-      {/* Live Chat */}
       <div className="bg-white rounded-lg p-6 shadow-lg">
-        <h2 className="text-2xl font-bold text-gray-900 mb-4">💬 Live Chat</h2>
+        <h2 className="text-2xl font-bold text-gray-900 mb-4">Live Chat</h2>
         
         {!isSignedIn ? (
           <div className="mb-4">
@@ -525,10 +508,9 @@ export default function RadioClient() {
         )}
       </div>
 
-      {/* Professional DJ Console with Video Live Screen */}
       <div className="bg-gradient-to-r from-gray-900 to-gray-800 rounded-lg p-6 shadow-2xl border border-gray-700">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-3xl font-bold text-white">🎛️ Professional DJ Console</h2>
+          <h2 className="text-3xl font-bold text-white">Professional DJ Console</h2>
           <div className="text-right">
             <div className="text-sm text-gray-300">Listeners</div>
             <div className="text-2xl font-bold text-green-400">{listenerCount}</div>
@@ -541,7 +523,7 @@ export default function RadioClient() {
               onClick={() => signIn()}
               className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white px-8 py-4 rounded-lg font-semibold text-lg transition-all transform hover:scale-105"
             >
-              🔐 Sign In to Access DJ Console
+              Sign In to Access DJ Console
             </button>
           </div>
         ) : (
@@ -558,24 +540,20 @@ export default function RadioClient() {
 
             {isAdmin && (
               <>
-                {/* On Air Status */}
                 {isLive && (
                   <div className="bg-gradient-to-r from-red-600 to-red-800 border border-red-500 rounded-lg p-4 animate-pulse">
-                    <div className="text-red-100 font-bold text-xl text-center">🎙️ ON AIR</div>
+                    <div className="text-red-100 font-bold text-xl text-center">ON AIR</div>
                     <div className="text-center text-red-200">
                       Time: {formatTime(onAirTime)}
                     </div>
                   </div>
                 )}
 
-                {/* Side-by-Side Layout: DJ Console + Video Live Screen */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  {/* Left Side: DJ Console Controls */}
                   <div className="space-y-4">
-                    {/* Live Broadcasting Controls */}
                     <div className="grid grid-cols-1 gap-4">
                       <div className="bg-gray-800 rounded-lg p-4">
-                        <h3 className="text-lg font-semibold text-white mb-3">🎙️ Live Audio</h3>
+                        <h3 className="text-lg font-semibold text-white mb-3">Live Audio</h3>
                         <button
                           onClick={isLive ? stopLive : goLiveAudio}
                           className={`w-full px-4 py-3 rounded-lg font-semibold transition-all transform hover:scale-105 ${
@@ -584,12 +562,12 @@ export default function RadioClient() {
                               : 'bg-green-600 hover:bg-green-700 text-white'
                           }`}
                         >
-                          {isLive ? '🛑 Stop Live' : '🎙️ Go Live Audio'}
+                          {isLive ? 'Stop Live' : 'Go Live Audio'}
                         </button>
                       </div>
                       
                       <div className="bg-gray-800 rounded-lg p-4">
-                        <h3 className="text-lg font-semibold text-white mb-3">📹 Live Video</h3>
+                        <h3 className="text-lg font-semibold text-white mb-3">Live Video</h3>
                         <button
                           onClick={isVideoLive ? stopLive : goLiveVideo}
                           className={`w-full px-4 py-3 rounded-lg font-semibold transition-all transform hover:scale-105 ${
@@ -598,14 +576,13 @@ export default function RadioClient() {
                               : 'bg-green-600 hover:bg-green-700 text-white'
                           }`}
                         >
-                          {isVideoLive ? '🛑 Stop Live' : '📹 Go Live Video'}
+                          {isVideoLive ? 'Stop Live' : 'Go Live Video'}
                         </button>
                       </div>
                     </div>
 
-                    {/* Exclusive Music Player */}
                     <div className="bg-gray-800 rounded-lg p-4">
-                      <h3 className="text-lg font-semibold text-white mb-3">🎵 Play Exclusive</h3>
+                      <h3 className="text-lg font-semibold text-white mb-3">Play Exclusive</h3>
                       <div className="space-y-3">
                         <input
                           type="file"
@@ -626,16 +603,15 @@ export default function RadioClient() {
                         <button
                           onClick={startExclusiveFromFile}
                           disabled={!exclusiveFile}
-                          className="w-full bg-purple-600 hover:bg-purple-700 disabled:bg-gray-600 text-white px-4 py-3 rounded-lg font-semibold transition-all transform hover:scale-105 disabled:transform-none"
+                          className="w-full bg-purple-600 hover:bg-purple-700 disabled:bg-gray-600 text-white px-6 py-3 rounded-lg font-semibold transition-all transform hover:scale-105 disabled:transform-none"
                         >
-                          {isExclusivePlaying ? '⏸️ Stop' : '▶️ Play Exclusive'}
+                          {isExclusivePlaying ? 'Stop' : 'Play Exclusive'}
                         </button>
                       </div>
                     </div>
 
-                    {/* Podcast Recording */}
                     <div className="bg-gray-800 rounded-lg p-4">
-                      <h3 className="text-lg font-semibold text-white mb-3">🎙️ Podcast Recording</h3>
+                      <h3 className="text-lg font-semibold text-white mb-3">Podcast Recording</h3>
                       <div className="space-y-3">
                         {isRecording && (
                           <div className="bg-gray-700 rounded-lg p-3 text-center">
@@ -652,44 +628,40 @@ export default function RadioClient() {
                                 : 'bg-green-600 hover:bg-green-700 text-white'
                             }`}
                           >
-                            {isRecording ? '⏹️ Stop Recording' : '🎙️ Start Recording'}
+                            {isRecording ? 'Stop Recording' : 'Start Recording'}
                           </button>
                         </div>
                       </div>
                     </div>
                   </div>
 
-                  {/* Right Side: Video Live Screen */}
                   <div className="space-y-4">
-                    {/* Video Live Display */}
                     <div className="bg-gray-800 rounded-lg p-4">
-                      <h3 className="text-lg font-semibold text-white mb-3">📹 Live Video Screen</h3>
+                      <h3 className="text-lg font-semibold text-white mb-3">Live Video Screen</h3>
                       <div id="video-live-screen" className="bg-gray-900 rounded-lg p-4 min-h-[300px] flex items-center justify-center">
                         {isVideoLive ? (
                           <div className="text-center">
-                            <div className="text-green-400 text-2xl mb-2">📹</div>
+                            <div className="text-green-400 text-2xl mb-2">Video</div>
                             <div className="text-white font-semibold">Live Video Streaming</div>
                             <div className="text-gray-400 text-sm">Your camera feed is live</div>
                           </div>
                         ) : (
                           <div className="text-center">
-                            <div className="text-gray-500 text-4xl mb-2">📹</div>
+                            <div className="text-gray-500 text-4xl mb-2">Video</div>
                             <div className="text-gray-400 font-semibold">Video Screen</div>
-                            <div className="text-gray-500 text-sm">Click "Go Live Video" to start</div>
+                            <div className="text-gray-500 text-sm">Click Go Live Video to start</div>
                           </div>
                         )}
                       </div>
                     </div>
 
-                    {/* Professional DJ Controls */}
                     <div className="bg-gray-800 rounded-lg p-4">
-                      <h3 className="text-lg font-semibold text-white mb-4">🎚️ Professional Controls</h3>
+                      <h3 className="text-lg font-semibold text-white mb-4">Professional Controls</h3>
                       
                       <div className="space-y-4">
-                        {/* Mic Volume */}
                         <div>
                           <label className="block text-sm font-medium text-gray-300 mb-2">
-                            🎤 Mic Volume
+                            Mic Volume
                           </label>
                           <input
                             type="range"
@@ -703,10 +675,9 @@ export default function RadioClient() {
                           <div className="text-center text-white font-semibold mt-2">{Math.round(micVolume * 100)}%</div>
                         </div>
 
-                        {/* Crossfader */}
                         <div>
                           <label className="block text-sm font-medium text-gray-300 mb-2">
-                            ↔️ Crossfader
+                            Crossfader
                           </label>
                           <input
                             type="range"
@@ -720,10 +691,9 @@ export default function RadioClient() {
                           <div className="text-center text-white font-semibold mt-2">{Math.round(crossfader * 100)}%</div>
                         </div>
 
-                        {/* EQ Controls */}
                         <div>
                           <label className="block text-sm font-medium text-gray-300 mb-2">
-                            🎛️ EQ Controls
+                            EQ Controls
                           </label>
                           <div className="space-y-2">
                             <div>
@@ -766,13 +736,12 @@ export default function RadioClient() {
                         </div>
                       </div>
 
-                      {/* MIDI Controller */}
                       <div className="mt-6 text-center">
                         <button
                           onClick={enableMIDI}
                           className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold transition-all transform hover:scale-105"
                         >
-                          🔌 Enable MIDI Controller
+                          Enable MIDI Controller
                         </button>
                       </div>
                     </div>
@@ -792,12 +761,11 @@ export default function RadioClient() {
         )}
       </div>
 
-      {/* Radio Schedule */}
       <div className="bg-white rounded-lg p-6 shadow-lg">
-        <h2 className="text-2xl font-bold text-gray-900 mb-4">📅 Radio Schedule</h2>
+        <h2 className="text-2xl font-bold text-gray-900 mb-4">Radio Schedule</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {schedule.map((slot, index) => (
-            <div key={index} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+            <div key={index} className="border border-gray-200 rounded-lg p-4">
               <div className="font-semibold text-gray-900">{slot.day}</div>
               <div className="text-sm text-gray-600">{slot.time}</div>
               <div className="text-purple-600 font-medium">{slot.show}</div>
