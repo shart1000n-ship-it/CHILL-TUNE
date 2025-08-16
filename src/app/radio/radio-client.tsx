@@ -83,7 +83,7 @@ export default function RadioClient() {
 
   // On-air time tracker
   useEffect(() => {
-    let interval: NodeJS.Timeout;
+    let interval: any;
     if (isLive) {
       interval = setInterval(() => {
         setOnAirTime(prev => prev + 1);
@@ -96,7 +96,7 @@ export default function RadioClient() {
 
   // Exclusive track duration
   useEffect(() => {
-    let interval: NodeJS.Timeout;
+    let interval: any;
     if (isExclusivePlaying && exclusiveDuration > 0) {
       interval = setInterval(() => {
         setExclusiveElapsed(prev => {
@@ -115,7 +115,7 @@ export default function RadioClient() {
 
   // Recording time tracker
   useEffect(() => {
-    let interval: NodeJS.Timeout;
+    let interval: any;
     if (isRecording) {
       interval = setInterval(() => {
         setRecordingTime(prev => prev + 1);
