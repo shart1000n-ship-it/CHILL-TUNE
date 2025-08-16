@@ -1450,24 +1450,44 @@ export default function RadioClient() {
              <div className="bg-white/10 rounded-lg p-4">
                <p className="text-white text-sm mb-3">Choose your donation method:</p>
                <div className="flex flex-wrap justify-center gap-3">
-                 <button className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold transition-colors">
+                 <a 
+                   href="https://www.paypal.com/donate/?hosted_button_id=YOUR_PAYPAL_ID" 
+                   target="_blank" 
+                   rel="noopener noreferrer"
+                   className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold transition-colors inline-block"
+                 >
                    💳 PayPal
-                 </button>
-                 <button className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-semibold transition-colors">
+                 </a>
+                 <a 
+                   href="https://cash.app/$YOUR_CASHAPP_USERNAME" 
+                   target="_blank" 
+                   rel="noopener noreferrer"
+                   className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-semibold transition-colors inline-block"
+                 >
                    🍃 Cash App
-                 </button>
-                 <button className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg font-semibold transition-colors">
+                 </a>
+                 <a 
+                   href="https://venmo.com/YOUR_VENMO_USERNAME" 
+                   target="_blank" 
+                   rel="noopener noreferrer"
+                   className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg font-semibold transition-colors inline-block"
+                 >
                    🚀 Venmo
-                 </button>
+                 </a>
                </div>
              </div>
              
-             <div className="text-center">
-               <p className="text-slate-200 text-sm">Or send a one-time donation:</p>
-               <button className="bg-yellow-600 hover:bg-yellow-700 text-white px-8 py-3 rounded-lg font-semibold text-lg transition-colors mt-2">
-                 💰 Donate Now
-               </button>
-             </div>
+                            <div className="text-center">
+                 <p className="text-slate-200 text-sm">Or send a one-time donation:</p>
+                 <a 
+                   href="https://www.paypal.com/donate/?hosted_button_id=YOUR_PAYPAL_ID" 
+                   target="_blank" 
+                   rel="noopener noreferrer"
+                   className="bg-yellow-600 hover:bg-yellow-700 text-white px-8 py-3 rounded-lg font-semibold text-lg transition-colors mt-2 inline-block"
+                 >
+                   💰 Donate Now
+                 </a>
+               </div>
            </div>
          </div>
 
