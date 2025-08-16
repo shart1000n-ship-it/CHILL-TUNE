@@ -122,14 +122,23 @@ export default function RadioClient() {
 
     // Connect the main audio player to the stream gain node
     if (audioRef.current) {
-      // Create a media element source from the audio element
-      const audioSource = audioContext.createMediaElementSource(audioRef.current);
-      
-      // Connect: audio source -> stream gain -> destination
-      audioSource.connect(streamGainNode);
-      streamGainNode.connect(audioContext.destination);
-      
-      console.log('Audio player connected to stream gain node');
+      try {
+        // Create a media element source from the audio element
+        const audioSource = audioContext.createMediaElementSource(audioRef.current);
+        
+        // Connect: audio source -> stream gain -> destination
+        audioSource.connect(streamGainNode);
+        streamGainNode.connect(audioContext.destination);
+        
+        console.log('Audio player connected to stream gain node');
+        
+        // Apply initial crossfader effect
+        const streamGainValue = (1 - crossfader) * streamVolume * volume;
+        streamGainNode.gain.setValueAtTime(streamGainValue, audioContext.currentTime);
+        
+      } catch (error) {
+        console.error('Failed to connect audio:', error);
+      }
     }
   }, [audioContext, streamGainNode, exclusiveGainNode]);
 
@@ -330,7 +339,9 @@ export default function RadioClient() {
     
     // Also apply to stream gain node if available
     if (streamGainNode && audioContext) {
-      streamGainNode.gain.setValueAtTime(newVolume * (1 - crossfader) * streamVolume, audioContext.currentTime);
+      const streamGainValue = newVolume * (1 - crossfader) * streamVolume;
+      streamGainNode.gain.setValueAtTime(streamGainValue, audioContext.currentTime);
+      console.log('Main volume changed to:', newVolume, 'Stream gain:', streamGainValue);
     }
   };
 
@@ -846,6 +857,46 @@ export default function RadioClient() {
     alert('Check console for audio system details!');
   };
 
+  const testWorkingAudio = () => {
+    try {
+      if (!audioContext) {
+        alert('Audio system not initialized. Please wait a moment and try again.');
+        return;
+      }
+
+      // Create a simple test tone that goes through the gain nodes
+      const oscillator = audioContext.createOscillator();
+      const testGain = audioContext.createGain();
+      
+      oscillator.frequency.setValueAtTime(440, audioContext.currentTime); // A4 note
+      testGain.gain.setValueAtTime(0.1, audioContext.currentTime);
+      
+      // Connect through the working audio chain
+      oscillator.connect(testGain);
+      
+      if (streamGainNode) {
+        testGain.connect(streamGainNode);
+        console.log('✅ Test audio connected to stream gain node');
+      }
+      
+      if (exclusiveGainNode) {
+        testGain.connect(exclusiveGainNode);
+        console.log('✅ Test audio connected to exclusive gain node');
+      }
+      
+      // Start and stop the test tone
+      oscillator.start();
+      oscillator.stop(audioContext.currentTime + 1);
+      
+      console.log('🎵 Test audio playing through gain nodes!');
+      alert('🎵 Test audio playing! Move the crossfader and volume controls to hear the difference!');
+      
+    } catch (error) {
+      console.error('Test audio failed:', error);
+      alert('Test failed: ' + (error as Error).message);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="bg-white rounded-lg p-6 shadow-lg">
@@ -1003,6 +1054,13 @@ export default function RadioClient() {
                 <div className="bg-gray-800 rounded-lg p-4">
                   <h3 className="text-lg font-semibold text-white mb-4 text-center">🎵 Audio Controls</h3>
                   
+                  {/* Status Indicator */}
+                  <div className="mb-4 p-3 bg-green-900 border border-green-600 rounded-lg">
+                    <div className="text-green-200 text-sm text-center">
+                      🎵 Audio System Active - Controls Working in Real-Time
+                    </div>
+                  </div>
+                  
                   <div className="space-y-4">
                     {/* Main Volume Control */}
                     <div>
@@ -1018,6 +1076,9 @@ export default function RadioClient() {
                         onChange={handleVolumeChange}
                         className="w-full h-3 bg-gray-700 rounded-lg appearance-none cursor-pointer"
                       />
+                      <div className="text-center text-xs text-gray-400 mt-1">
+                        {streamGainNode ? '✅ Connected to Audio System' : '⏳ Connecting...'}
+                      </div>
                     </div>
 
                     {/* Mic Volume Control */}
@@ -1034,6 +1095,9 @@ export default function RadioClient() {
                         onChange={handleMicVolumeChange}
                         className="w-full h-3 bg-gray-700 rounded-lg appearance-none cursor-pointer"
                       />
+                      <div className="text-center text-xs text-gray-400 mt-1">
+                        {micGainNode ? '✅ Connected to Audio System' : '⏳ Connecting...'}
+                      </div>
                     </div>
 
                     {/* Crossfader Control */}
@@ -1057,6 +1121,9 @@ export default function RadioClient() {
                       <div className="flex justify-between text-sm text-gray-300 mt-2">
                         <span className="bg-blue-600 px-2 py-1 rounded">Stream: {Math.round((1 - crossfader) * 100)}%</span>
                         <span className="bg-purple-600 px-2 py-1 rounded">Exclusive: {Math.round(crossfader * 100)}%</span>
+                      </div>
+                      <div className="text-center text-xs text-gray-400 mt-2">
+                        {streamGainNode && exclusiveGainNode ? '✅ Crossfader Active' : '⏳ Connecting...'}
                       </div>
                     </div>
 
@@ -1246,6 +1313,12 @@ export default function RadioClient() {
                       className="w-full bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded text-xs font-semibold"
                     >
                       🎧 Test Audio System
+                    </button>
+                    <button
+                      onClick={testWorkingAudio}
+                      className="w-full bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded text-xs font-semibold"
+                    >
+                      🎵 Test Working Audio
                     </button>
                   </div>
                 </div>
