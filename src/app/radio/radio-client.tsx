@@ -96,39 +96,15 @@ export default function RadioClient() {
         const streamGain = newAudioContext.createGain();
         const exclusiveGain = newAudioContext.createGain();
         
-        // Create EQ nodes
-        const lowFilter = newAudioContext.createBiquadFilter();
-        const midFilter = newAudioContext.createBiquadFilter();
-        const highFilter = newAudioContext.createBiquadFilter();
-        
-        // Configure EQ filters
-        lowFilter.type = 'lowshelf';
-        lowFilter.frequency.setValueAtTime(200, newAudioContext.currentTime);
-        
-        midFilter.type = 'peaking';
-        midFilter.frequency.setValueAtTime(1000, newAudioContext.currentTime);
-        midFilter.Q.setValueAtTime(1, newAudioContext.currentTime);
-        
-        highFilter.type = 'highshelf';
-        highFilter.frequency.setValueAtTime(3000, newAudioContext.currentTime);
-        
         // Set initial values
         micGain.gain.value = micVolume;
         streamGain.gain.value = (1 - crossfader) * streamVolume;
         exclusiveGain.gain.value = crossfader * exclusiveVolume;
         
-        // Apply EQ values
-        lowFilter.gain.setValueAtTime((eqLow - 0.5) * 20, newAudioContext.currentTime);
-        midFilter.gain.setValueAtTime((eqMid - 0.5) * 20, newAudioContext.currentTime);
-        highFilter.gain.setValueAtTime((eqHigh - 0.5) * 20, newAudioContext.currentTime);
-        
         // Store nodes in state
         setMicGainNode(micGain);
         setStreamGainNode(streamGain);
         setExclusiveGainNode(exclusiveGain);
-        setEqLowNode(lowFilter);
-        setEqMidNode(midFilter);
-        setEqHighNode(highFilter);
         
         console.log('Audio system initialized successfully');
         
@@ -139,6 +115,23 @@ export default function RadioClient() {
     
     initAudio();
   }, []); // Run once on mount
+
+  // Connect audio nodes to actual audio sources
+  useEffect(() => {
+    if (!audioContext || !streamGainNode || !exclusiveGainNode) return;
+
+    // Connect the main audio player to the stream gain node
+    if (audioRef.current) {
+      // Create a media element source from the audio element
+      const audioSource = audioContext.createMediaElementSource(audioRef.current);
+      
+      // Connect: audio source -> stream gain -> destination
+      audioSource.connect(streamGainNode);
+      streamGainNode.connect(audioContext.destination);
+      
+      console.log('Audio player connected to stream gain node');
+    }
+  }, [audioContext, streamGainNode, exclusiveGainNode]);
 
   // Initialize audio player and crossfader
   useEffect(() => {
@@ -329,8 +322,15 @@ export default function RadioClient() {
   const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newVolume = parseFloat(e.target.value);
     setVolume(newVolume);
+    
+    // Apply to audio element
     if (audioRef.current) {
       audioRef.current.volume = newVolume;
+    }
+    
+    // Also apply to stream gain node if available
+    if (streamGainNode && audioContext) {
+      streamGainNode.gain.setValueAtTime(newVolume * (1 - crossfader) * streamVolume, audioContext.currentTime);
     }
   };
 
@@ -338,7 +338,7 @@ export default function RadioClient() {
     const newVolume = parseFloat(e.target.value);
     setMicVolume(newVolume);
     
-    // Apply to audio node immediately
+    // Apply to mic gain node immediately
     if (micGainNode && audioContext) {
       micGainNode.gain.setValueAtTime(newVolume, audioContext.currentTime);
       console.log('Mic volume changed to:', newVolume);
@@ -349,11 +349,15 @@ export default function RadioClient() {
     const newCrossfader = parseFloat(e.target.value);
     setCrossfader(newCrossfader);
     
-    // Apply crossfader effect immediately
+    // Apply crossfader effect immediately to both gain nodes
     if (streamGainNode && exclusiveGainNode && audioContext) {
-      streamGainNode.gain.setValueAtTime((1 - newCrossfader) * streamVolume, audioContext.currentTime);
-      exclusiveGainNode.gain.setValueAtTime(newCrossfader * exclusiveVolume, audioContext.currentTime);
-      console.log('Crossfader changed to:', newCrossfader);
+      const streamGainValue = (1 - newCrossfader) * streamVolume * volume;
+      const exclusiveGainValue = newCrossfader * exclusiveVolume;
+      
+      streamGainNode.gain.setValueAtTime(streamGainValue, audioContext.currentTime);
+      exclusiveGainNode.gain.setValueAtTime(exclusiveGainValue, audioContext.currentTime);
+      
+      console.log('Crossfader changed to:', newCrossfader, 'Stream:', streamGainValue, 'Exclusive:', exclusiveGainValue);
     }
   };
 
@@ -363,8 +367,9 @@ export default function RadioClient() {
     
     // Apply to stream gain node immediately
     if (streamGainNode && audioContext) {
-      streamGainNode.gain.setValueAtTime((1 - crossfader) * newVolume, audioContext.currentTime);
-      console.log('Stream volume changed to:', newVolume);
+      const streamGainValue = (1 - crossfader) * newVolume * volume;
+      streamGainNode.gain.setValueAtTime(streamGainValue, audioContext.currentTime);
+      console.log('Stream volume changed to:', newVolume, 'Gain:', streamGainValue);
     }
   };
 
@@ -374,8 +379,9 @@ export default function RadioClient() {
     
     // Apply to exclusive gain node immediately
     if (exclusiveGainNode && audioContext) {
-      exclusiveGainNode.gain.setValueAtTime(crossfader * newVolume, audioContext.currentTime);
-      console.log('Exclusive volume changed to:', newVolume);
+      const exclusiveGainValue = crossfader * newVolume;
+      exclusiveGainNode.gain.setValueAtTime(exclusiveGainValue, audioContext.currentTime);
+      console.log('Exclusive volume changed to:', newVolume, 'Gain:', exclusiveGainValue);
     }
   };
 
@@ -813,6 +819,33 @@ export default function RadioClient() {
     }
   };
 
+  const testAudioSystem = () => {
+    console.log('=== Audio System Test ===');
+    console.log('Audio Context:', audioContext ? 'Active' : 'None');
+    console.log('Stream Gain Node:', streamGainNode ? 'Active' : 'None');
+    console.log('Exclusive Gain Node:', exclusiveGainNode ? 'Active' : 'None');
+    console.log('Mic Gain Node:', micGainNode ? 'Active' : 'None');
+    
+    if (streamGainNode && audioContext) {
+      console.log('Stream Gain Value:', streamGainNode.gain.value);
+      console.log('Stream Volume:', streamVolume);
+      console.log('Main Volume:', volume);
+      console.log('Crossfader:', crossfader);
+    }
+    
+    if (exclusiveGainNode && audioContext) {
+      console.log('Exclusive Gain Value:', exclusiveGainNode.gain.value);
+      console.log('Exclusive Volume:', exclusiveVolume);
+    }
+    
+    if (micGainNode && audioContext) {
+      console.log('Mic Gain Value:', micGainNode.gain.value);
+      console.log('Mic Volume:', micVolume);
+    }
+    
+    alert('Check console for audio system details!');
+  };
+
   return (
     <div className="space-y-6">
       <div className="bg-white rounded-lg p-6 shadow-lg">
@@ -1207,6 +1240,12 @@ export default function RadioClient() {
                       className="w-full bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded text-xs font-semibold"
                     >
                       🎵 Test Audio Chain
+                    </button>
+                    <button
+                      onClick={testAudioSystem}
+                      className="w-full bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded text-xs font-semibold"
+                    >
+                      🎧 Test Audio System
                     </button>
                   </div>
                 </div>
