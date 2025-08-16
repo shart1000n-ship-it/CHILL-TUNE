@@ -972,7 +972,123 @@ export default function RadioClient() {
 
                   <div className="space-y-4">
                     <div className="bg-gray-800 rounded-lg p-4">
-                      <h3 className="text-lg font-semibold text-white mb-3">Live Video Screen</h3>
+                      <h3 className="text-lg font-semibold text-white mb-4">🎛️ Professional Audio Controls</h3>
+                      
+                      {/* Status Indicator */}
+                      <div className="mb-4 p-3 bg-green-900 border border-green-600 rounded-lg">
+                        <div className="text-green-200 text-sm text-center">
+                          🎵 Audio Controls Active - Real-time Processing Enabled
+                        </div>
+                      </div>
+                      
+                      <div className="space-y-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-300 mb-2">
+                            🎤 Mic Volume: {Math.round(micVolume * 100)}%
+                          </label>
+                          <input
+                            type="range"
+                            min="0"
+                            max="1"
+                            step="0.01"
+                            value={micVolume}
+                            onChange={handleMicVolumeChange}
+                            className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer slider"
+                          />
+                          <div className="text-center text-white font-semibold mt-2">{Math.round(micVolume * 100)}%</div>
+                          <div className="text-center text-xs text-gray-400">
+                            {micGainNode ? '✅ Active' : '⏳ Waiting for audio stream'}
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-300 mb-2">
+                            ↔️ Crossfader: {Math.round(crossfader * 100)}%
+                          </label>
+                          <div className="flex items-center space-x-4 mb-2">
+                            <span className="text-xs text-blue-200">🎵 Stream</span>
+                            <input
+                              type="range"
+                              min="0"
+                              max="1"
+                              step="0.01"
+                              value={crossfader}
+                              onChange={handleCrossfaderChange}
+                              className="flex-1 h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
+                            />
+                            <span className="text-xs text-purple-200">🎵 Exclusive</span>
+                          </div>
+                          <div className="text-center text-white font-semibold mt-2">{Math.round(crossfader * 100)}%</div>
+                          <div className="flex justify-between text-xs text-gray-400 mt-1">
+                            <span>Stream: {Math.round((1 - crossfader) * 100)}%</span>
+                            <span>Exclusive: {Math.round(crossfader * 100)}%</span>
+                          </div>
+                          <div className="text-center text-xs text-gray-400 mt-2">
+                            {streamGainNode && exclusiveGainNode ? '✅ Crossfader Active' : '⏳ Waiting for audio sources'}
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-300 mb-2">
+                            🎛️ EQ Controls
+                          </label>
+                          <div className="space-y-2">
+                            <div>
+                              <div className="text-xs text-gray-400">Low</div>
+                              <input
+                                type="range"
+                                min="0"
+                                max="1"
+                                step="0.01"
+                                value={eqLow}
+                                onChange={(e) => setEqLow(parseFloat(e.target.value))}
+                                className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
+                              />
+                            </div>
+                            <div>
+                              <div className="text-xs text-gray-400">Mid</div>
+                              <input
+                                type="range"
+                                min="0"
+                                max="1"
+                                step="0.01"
+                                value={eqMid}
+                                onChange={(e) => setEqMid(parseFloat(e.target.value))}
+                                className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
+                              />
+                            </div>
+                            <div>
+                              <div className="text-xs text-gray-400">High</div>
+                              <input
+                                type="range"
+                                min="0"
+                                max="1"
+                                step="0.01"
+                                value={eqHigh}
+                                onChange={(e) => setEqHigh(parseFloat(e.target.value))}
+                                className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
+                              />
+                            </div>
+                          </div>
+                          <div className="text-center text-xs text-gray-400 mt-2">
+                            {eqLowNode && eqMidNode && eqHighNode ? '✅ EQ Active' : '⏳ Waiting for audio stream'}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="mt-6 text-center">
+                        <button
+                          onClick={enableMIDI}
+                          className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold transition-all transform hover:scale-105"
+                        >
+                          🔌 Enable MIDI Controller
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Video Live Screen */}
+                    <div className="bg-gray-800 rounded-lg p-4">
+                      <h3 className="text-lg font-semibold text-white mb-3">📹 Live Video Screen</h3>
                       <div id="video-live-screen" className="bg-gray-900 rounded-lg p-4 min-h-[300px] flex items-center justify-center">
                         {isVideoLive ? (
                           <div className="text-center">
@@ -987,97 +1103,6 @@ export default function RadioClient() {
                             <div className="text-gray-500 text-sm">Click Go Live Video to start</div>
                           </div>
                         )}
-                      </div>
-                    </div>
-
-                    <div className="bg-gray-800 rounded-lg p-4">
-                      <h3 className="text-lg font-semibold text-white mb-4">Professional Controls</h3>
-                      
-                      <div className="space-y-4">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-300 mb-2">
-                            Mic Volume
-                          </label>
-                          <input
-                            type="range"
-                            min="0"
-                            max="1"
-                            step="0.1"
-                            value={micVolume}
-                            onChange={handleMicVolumeChange}
-                            className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer slider"
-                          />
-                          <div className="text-center text-white font-semibold mt-2">{Math.round(micVolume * 100)}%</div>
-                        </div>
-
-                        <div>
-                          <label className="block text-sm font-medium text-gray-300 mb-2">
-                            Crossfader
-                          </label>
-                          <input
-                            type="range"
-                            min="0"
-                            max="1"
-                            step="0.1"
-                            value={crossfader}
-                            onChange={handleCrossfaderChange}
-                            className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer slider"
-                          />
-                          <div className="text-center text-white font-semibold mt-2">{Math.round(crossfader * 100)}%</div>
-                        </div>
-
-                        <div>
-                          <label className="block text-sm font-medium text-gray-300 mb-2">
-                            EQ Controls
-                          </label>
-                          <div className="space-y-2">
-                            <div>
-                              <div className="text-xs text-gray-400">Low</div>
-                              <input
-                                type="range"
-                                min="0"
-                                max="1"
-                                step="0.1"
-                                value={eqLow}
-                                onChange={(e) => setEqLow(parseFloat(e.target.value))}
-                                className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
-                              />
-                            </div>
-                            <div>
-                              <div className="text-xs text-gray-400">Mid</div>
-                              <input
-                                type="range"
-                                min="0"
-                                max="1"
-                                step="0.1"
-                                value={eqMid}
-                                onChange={(e) => setEqMid(parseFloat(e.target.value))}
-                                className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
-                              />
-                            </div>
-                            <div>
-                              <div className="text-xs text-gray-400">High</div>
-                              <input
-                                type="range"
-                                min="0"
-                                max="1"
-                                step="0.1"
-                                value={eqHigh}
-                                onChange={(e) => setEqHigh(parseFloat(e.target.value))}
-                                className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="mt-6 text-center">
-                        <button
-                          onClick={enableMIDI}
-                          className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold transition-all transform hover:scale-105"
-                        >
-                          Enable MIDI Controller
-                        </button>
                       </div>
                     </div>
                   </div>
