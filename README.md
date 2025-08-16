@@ -19,7 +19,7 @@ Online Hip-Hop & R&B Radio Station
 ## Latest Fix
 **DJ Console Login 500 Error Fixed** ✅
 - Simplified NextAuth configuration
-- Admin credentials: admin@chillandtune.fm / admin123
+- Admin credentials: chillandtune.fm / Vibes007
 - Auto-creates admin user in database
 - No more server crashes on login
 

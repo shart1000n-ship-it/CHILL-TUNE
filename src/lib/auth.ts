@@ -17,20 +17,20 @@ export const authOptions: NextAuthOptions = {
         if (!credentials?.email || !credentials?.password) return null;
         
         // Simple admin check for now
-        if (credentials.email === 'admin@chillandtune.fm' && credentials.password === 'admin123') {
+        if (credentials.email === 'chillandtune.fm' && credentials.password === 'Vibes007') {
           // Create or find admin user
           let user = await prisma.user.findUnique({ 
-            where: { email: 'admin@chillandtune.fm' } 
+            where: { email: 'chillandtune.fm' } 
           });
           
           if (!user) {
             // Create admin user if doesn't exist
             user = await prisma.user.create({
               data: {
-                email: 'admin@chillandtune.fm',
-                name: 'Admin',
-                username: 'admin',
-                hashedPassword: 'admin123', // Simple password for now
+                email: 'chillandtune.fm',
+                name: 'DJ',
+                username: 'chillandtune',
+                hashedPassword: 'Vibes007', // Simple password for now
               }
             });
           }
