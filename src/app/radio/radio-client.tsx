@@ -42,6 +42,13 @@ export default function RadioClient() {
   const [eqLow, setEqLow] = useState(0.5);
   const [eqMid, setEqMid] = useState(0.5);
   const [eqHigh, setEqHigh] = useState(0.5);
+  
+  // New states for crossfader and multi-admin
+  const [streamVolume, setStreamVolume] = useState(0.7);
+  const [exclusiveVolume, setExclusiveVolume] = useState(0.7);
+  const [activeStreamers, setActiveStreamers] = useState<Array<{id: string, email: string, type: 'audio' | 'video'}>>([]);
+  const [exclusiveStartTime, setExclusiveStartTime] = useState<number>(0);
+  
   const [schedule] = useState([
     { day: 'Monday', time: '6:00 PM - 10:00 PM', show: 'The Evening Mix' },
     { day: 'Tuesday', time: '7:00 PM - 11:00 PM', show: 'R&B Classics' },
@@ -58,6 +65,8 @@ export default function RadioClient() {
   const exclusiveContextRef = useRef<AudioContext | null>(null);
   const exclusiveSourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
   const exclusiveDestinationRef = useRef<MediaStreamAudioDestinationNode | null>(null);
+  const exclusiveGainNodeRef = useRef<GainNode | null>(null);
+  const streamGainNodeRef = useRef<GainNode | null>(null);
 
   // Check if user is admin
   const isAdmin = session?.user?.email && (
@@ -65,12 +74,48 @@ export default function RadioClient() {
     session.user.email === 'chillandtune.fm'
   );
 
-  // Initialize audio player
+  // Initialize audio player and crossfader
   useEffect(() => {
     if (audioRef.current) {
       audioRef.current.volume = volume;
     }
-  }, [volume]);
+    
+    // Apply crossfader effect
+    if (exclusiveGainNodeRef.current && streamGainNodeRef.current) {
+      // Crossfader: 0 = full stream, 1 = full exclusive
+      streamGainNodeRef.current.gain.value = (1 - crossfader) * streamVolume;
+      exclusiveGainNodeRef.current.gain.value = crossfader * exclusiveVolume;
+    }
+  }, [volume, crossfader, streamVolume, exclusiveVolume]);
+
+  // Crossfader effect on exclusive tracks
+  useEffect(() => {
+    if (exclusiveGainNodeRef.current && streamGainNodeRef.current) {
+      streamGainNodeRef.current.gain.value = (1 - crossfader) * streamVolume;
+      exclusiveGainNodeRef.current.gain.value = crossfader * exclusiveVolume;
+    }
+  }, [crossfader, streamVolume, exclusiveVolume]);
+
+  // Moving timestamp for exclusive tracks
+  useEffect(() => {
+    let interval: any;
+    if (isExclusivePlaying && exclusiveStartTime > 0) {
+      interval = setInterval(() => {
+        const currentTime = Date.now();
+        const elapsed = Math.floor((currentTime - exclusiveStartTime) / 1000);
+        setExclusiveElapsed(elapsed);
+        
+        if (elapsed >= exclusiveDuration) {
+          setIsExclusivePlaying(false);
+          setExclusiveElapsed(0);
+          setExclusiveStartTime(0);
+        }
+      }, 100); // Update every 100ms for smooth movement
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [isExclusivePlaying, exclusiveStartTime, exclusiveDuration]);
 
   // Stream cycling effect
   useEffect(() => {
@@ -239,6 +284,15 @@ export default function RadioClient() {
         alert('Twilio is not configured. Audio streaming will be simulated.');
         setIsLive(true);
         setOnAirTime(0);
+        
+        // Add to active streamers
+        const streamerId = `audio-${Date.now()}`;
+        setActiveStreamers(prev => [...prev, {
+          id: streamerId,
+          email: session?.user?.email || 'unknown',
+          type: 'audio'
+        }]);
+        
         return;
       }
 
@@ -250,10 +304,35 @@ export default function RadioClient() {
       const audioContext = new AudioContext();
       const source = audioContext.createMediaStreamSource(stream);
       const destination = audioContext.createMediaStreamDestination();
-      source.connect(destination);
+      
+      // Create gain nodes for crossfader
+      const streamGain = audioContext.createGain();
+      const exclusiveGain = audioContext.createGain();
+      
+      streamGainNodeRef.current = streamGain;
+      exclusiveGainNodeRef.current = exclusiveGain;
+      
+      // Connect audio nodes
+      source.connect(streamGain);
+      source.connect(exclusiveGain);
+      streamGain.connect(destination);
+      exclusiveGain.connect(destination);
+      
+      // Apply initial crossfader
+      streamGain.gain.value = (1 - crossfader) * streamVolume;
+      exclusiveGain.gain.value = crossfader * exclusiveVolume;
     
       setIsLive(true);
       setOnAirTime(0);
+      
+      // Add to active streamers
+      const streamerId = `audio-${Date.now()}`;
+      setActiveStreamers(prev => [...prev, {
+        id: streamerId,
+        email: session?.user?.email || 'unknown',
+        type: 'audio'
+      }]);
+      
       alert('Going Live with Audio! Audio stream captured successfully.');
       
       (window as any).audioStream = stream;
@@ -273,6 +352,15 @@ export default function RadioClient() {
         setIsVideoLive(true);
         setIsLive(true);
         setOnAirTime(0);
+        
+        // Add to active streamers
+        const streamerId = `video-${Date.now()}`;
+        setActiveStreamers(prev => [...prev, {
+          id: streamerId,
+          email: session?.user?.email || 'unknown',
+          type: 'video'
+        }]);
+        
         return;
       }
 
@@ -305,6 +393,15 @@ export default function RadioClient() {
       setIsVideoLive(true);
       setIsLive(true);
       setOnAirTime(0);
+      
+      // Add to active streamers
+      const streamerId = `video-${Date.now()}`;
+      setActiveStreamers(prev => [...prev, {
+        id: streamerId,
+        email: session?.user?.email || 'unknown',
+        type: 'video'
+      }]);
+      
       alert('Going Live with Video! Video stream captured and displayed.');
       
       (window as any).videoStream = stream;
@@ -322,6 +419,10 @@ export default function RadioClient() {
     setIsLive(false);
     setIsVideoLive(false);
     setOnAirTime(0);
+    
+    // Remove current user from active streamers
+    setActiveStreamers(prev => prev.filter(s => s.email !== session?.user?.email));
+    
     alert('Live streaming stopped!');
   };
 
@@ -350,6 +451,7 @@ export default function RadioClient() {
       setExclusiveDuration(Math.floor(audioBuffer.duration));
       setExclusiveElapsed(0);
       setIsExclusivePlaying(true);
+      setExclusiveStartTime(Date.now()); // Start timestamp for exclusive track
 
       const source = exclusiveContextRef.current.createBufferSource();
       source.buffer = audioBuffer;
@@ -359,6 +461,7 @@ export default function RadioClient() {
       source.onended = () => {
         setIsExclusivePlaying(false);
         setExclusiveElapsed(0);
+        setExclusiveStartTime(0); // Reset start time
       };
 
     } catch (error) {
@@ -546,8 +649,78 @@ export default function RadioClient() {
                     <div className="text-center text-red-200">
                       Time: {formatTime(onAirTime)}
                     </div>
+                    {activeStreamers.length > 0 && (
+                      <div className="mt-3 text-center">
+                        <div className="text-red-200 text-sm">Active Streamers:</div>
+                        {activeStreamers.map((streamer) => (
+                          <div key={streamer.id} className="text-red-100 text-xs">
+                            {streamer.email} - {streamer.type}
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 )}
+
+                {/* Crossfader Controls */}
+                <div className="bg-gray-800 rounded-lg p-4">
+                  <h3 className="text-lg font-semibold text-white mb-4">Crossfader Control</h3>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                        Crossfader: {Math.round(crossfader * 100)}%
+                      </label>
+                      <div className="flex items-center space-x-4">
+                        <span className="text-xs text-gray-400">Stream</span>
+                        <input
+                          type="range"
+                          min="0"
+                          max="1"
+                          step="0.01"
+                          value={crossfader}
+                          onChange={(e) => setCrossfader(parseFloat(e.target.value))}
+                          className="flex-1 h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
+                        />
+                        <span className="text-xs text-gray-400">Exclusive</span>
+                      </div>
+                      <div className="flex justify-between text-xs text-gray-400 mt-1">
+                        <span>Stream: {Math.round((1 - crossfader) * 100)}%</span>
+                        <span>Exclusive: {Math.round(crossfader * 100)}%</span>
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-300 mb-2">
+                          Stream Volume: {Math.round(streamVolume * 100)}%
+                        </label>
+                        <input
+                          type="range"
+                          min="0"
+                          max="1"
+                          step="0.01"
+                          value={streamVolume}
+                          onChange={(e) => setStreamVolume(parseFloat(e.target.value))}
+                          className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-300 mb-2">
+                          Exclusive Volume: {Math.round(exclusiveVolume * 100)}%
+                        </label>
+                        <input
+                          type="range"
+                          min="0"
+                          max="1"
+                          step="0.01"
+                          value={exclusiveVolume}
+                          onChange={(e) => setExclusiveVolume(parseFloat(e.target.value))}
+                          className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   <div className="space-y-4">
@@ -594,8 +767,19 @@ export default function RadioClient() {
                           <div className="bg-gray-700 rounded-lg p-3">
                             <div className="text-sm text-gray-300">File: <span className="text-white">{exclusiveFile.name}</span></div>
                             {isExclusivePlaying && (
-                              <div className="text-sm text-gray-300 mt-2">
-                                Duration: <span className="text-white">{formatTime(exclusiveElapsed)}</span> / <span className="text-white">{formatTime(exclusiveDuration)}</span>
+                              <div className="mt-3 space-y-2">
+                                <div className="text-sm text-gray-300">
+                                  Duration: <span className="text-white">{formatTime(exclusiveElapsed)}</span> / <span className="text-white">{formatTime(exclusiveDuration)}</span>
+                                </div>
+                                <div className="w-full bg-gray-600 rounded-full h-2">
+                                  <div 
+                                    className="bg-purple-500 h-2 rounded-full transition-all duration-100"
+                                    style={{ width: `${(exclusiveElapsed / exclusiveDuration) * 100}%` }}
+                                  ></div>
+                                </div>
+                                <div className="text-xs text-gray-400 text-center">
+                                  {Math.round((exclusiveElapsed / exclusiveDuration) * 100)}% Complete
+                                </div>
                               </div>
                             )}
                           </div>
