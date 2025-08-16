@@ -1435,7 +1435,7 @@ export default function RadioClient() {
                      href="https://cash.app/$SDH1000N" 
                      target="_blank" 
                      rel="noopener noreferrer"
-                     className="bg-emerald-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg font-semibold transition-colors inline-block w-full"
+                     className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2 rounded-lg font-semibold transition-colors inline-block w-full"
                    >
                      Subscribe Now
                    </a>
@@ -1465,7 +1465,7 @@ export default function RadioClient() {
                
                <div className="text-center bg-white/10 rounded-lg p-4">
                  <p className="text-white text-sm mb-2">💡 <strong>How it works:</strong></p>
-                 <p className="text-slate-200 text-sm">Click any "Subscribe Now" button above to send your monthly payment via Cash App. Send the same amount each month to maintain your subscription benefits!</p>
+                 <p className="text-slate-200 text-sm">Click any &quot;Subscribe Now&quot; button above to send your monthly payment via Cash App. Send the same amount each month to maintain your subscription benefits!</p>
                </div>
              </div>
            )}
