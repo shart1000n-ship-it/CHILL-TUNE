@@ -96,10 +96,10 @@ export default function RadioClient() {
         const streamGain = newAudioContext.createGain();
         const exclusiveGain = newAudioContext.createGain();
         
-        // Set initial values
-        micGain.gain.value = micVolume;
-        streamGain.gain.value = (1 - crossfader) * streamVolume;
-        exclusiveGain.gain.value = crossfader * exclusiveVolume;
+        // Set initial values (using initial state values, not current state)
+        micGain.gain.value = 0.5; // Initial micVolume
+        streamGain.gain.value = 0.5; // Initial streamVolume
+        exclusiveGain.gain.value = 0.5; // Initial exclusiveVolume
         
         // Store nodes in state
         setMicGainNode(micGain);
@@ -1205,7 +1205,7 @@ export default function RadioClient() {
                       <div className="text-center">
                         <div className="text-gray-500 text-4xl mb-2">📹</div>
                         <div className="text-gray-400 font-semibold">Video Screen</div>
-                        <div className="text-gray-500 text-sm">Click "Go Live Video" to start</div>
+                        <div className="text-gray-500 text-sm">Click &quot;Go Live Video&quot; to start</div>
                       </div>
                     )}
                   </div>
