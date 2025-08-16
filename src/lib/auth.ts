@@ -1,10 +1,7 @@
 import { type NextAuthOptions } from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';
-import { PrismaAdapter } from '@auth/prisma-adapter';
-import { prisma } from './prisma';
 
 export const authOptions: NextAuthOptions = {
-  adapter: PrismaAdapter(prisma),
   session: { strategy: 'jwt' },
   providers: [
     Credentials({
@@ -16,30 +13,14 @@ export const authOptions: NextAuthOptions = {
       async authorize(credentials): Promise<{ id: string; name: string | null; email: string; image: string | null } | null> {
         if (!credentials?.email || !credentials?.password) return null;
         
-        // Simple admin check for now
+        // Simple hardcoded admin check - bypass Prisma for now
         if (credentials.email === 'chillandtune.fm' && credentials.password === 'Vibes007') {
-          // Create or find admin user
-          let user = await prisma.user.findUnique({ 
-            where: { email: 'chillandtune.fm' } 
-          });
-          
-          if (!user) {
-            // Create admin user if doesn't exist
-            user = await prisma.user.create({
-              data: {
-                email: 'chillandtune.fm',
-                name: 'DJ',
-                username: 'chillandtune',
-                hashedPassword: 'Vibes007', // Simple password for now
-              }
-            });
-          }
-          
+          // Return hardcoded admin user
           return { 
-            id: user.id, 
-            name: user.name ?? user.username, 
-            email: user.email, 
-            image: user.image ?? null 
+            id: 'admin-1', 
+            name: 'DJ', 
+            email: 'chillandtune.fm', 
+            image: null 
           };
         }
         
