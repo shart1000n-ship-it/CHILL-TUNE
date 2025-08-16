@@ -11,12 +11,12 @@ const supabase = createClient(
 );
 
 export default function RadioClient() {
-  // Music streams - All Hip Hop & R&B (using Hot 108 JAMZ)
+  // Music streams - All Hip Hop & R&B
   const STREAMS = [
-    { name: "PowerHitz (Pure R&B)", url: "https://ice1.somafm.com/defcon-128-mp3", genre: "R&B" },
-    { name: "Hip Hop Nation", url: "https://ice1.somafm.com/defcon-128-mp3", genre: "Hip-Hop" },
-    { name: "R&B Vibes", url: "https://ice1.somafm.com/defcon-128-mp3", genre: "R&B" },
-    { name: "Hip Hop Classics", url: "https://ice1.somafm.com/defcon-128-mp3", genre: "Hip-Hop" }
+    { name: "PowerHitz (Pure R&B)", url: "https://stream.radiojar.com/4ywdgup3bnzuv", genre: "R&B" },
+    { name: "Hip Hop Nation", url: "https://stream.radiojar.com/4ywdgup3bnzuv", genre: "Hip-Hop" },
+    { name: "R&B Vibes", url: "https://stream.radiojar.com/4ywdgup3bnzuv", genre: "R&B" },
+    { name: "Hip Hop Classics", url: "https://stream.radiojar.com/4ywdgup3bnzuv", genre: "Hip-Hop" }
   ];
 
   // MIDI Controller Support
@@ -962,76 +962,21 @@ export default function RadioClient() {
           </div>
           
           {isSignedIn && (
-            <div className="space-y-3">
-              {/* Emoji Reactions */}
-              <div className="flex flex-wrap gap-2">
-                <button
-                  onClick={() => setNewMessage(prev => prev + ' 🎧')}
-                  className="bg-slate-700 hover:bg-slate-600 text-white px-3 py-2 rounded-lg text-lg transition-colors"
-                >
-                  🎧
-                </button>
-                <button
-                  onClick={() => setNewMessage(prev => prev + ' 🎵')}
-                  className="bg-slate-700 hover:bg-slate-600 text-white px-3 py-2 rounded-lg text-lg transition-colors"
-                >
-                  🎵
-                </button>
-                <button
-                  onClick={() => setNewMessage(prev => prev + ' 🔥')}
-                  className="bg-slate-700 hover:bg-slate-600 text-white px-3 py-2 rounded-lg text-lg transition-colors"
-                >
-                  🔥
-                </button>
-                <button
-                  onClick={() => setNewMessage(prev => prev + ' 💯')}
-                  className="bg-slate-700 hover:bg-slate-600 text-white px-3 py-2 rounded-lg text-lg transition-colors"
-                >
-                  💯
-                </button>
-                <button
-                  onClick={() => setNewMessage(prev => prev + ' 🎤')}
-                  className="bg-slate-700 hover:bg-slate-600 text-white px-3 py-2 rounded-lg text-lg transition-colors"
-                >
-                  🎤
-                </button>
-                <button
-                  onClick={() => setNewMessage(prev => prev + ' 🎶')}
-                  className="bg-slate-700 hover:bg-slate-600 text-white px-3 py-2 rounded-lg text-lg transition-colors"
-                >
-                  🎶
-                </button>
-                <button
-                  onClick={() => setNewMessage(prev => prev + ' 🌟')}
-                  className="bg-slate-700 hover:bg-slate-600 text-white px-3 py-2 rounded-lg text-lg transition-colors"
-                >
-                  🌟
-                </button>
-                <button
-                  onClick={() => setNewMessage(prev => prev + ' 🚀')}
-                  className="bg-slate-700 hover:bg-slate-600 text-white px-3 py-2 rounded-lg text-lg transition-colors"
-                >
-                  🚀
-                </button>
-              </div>
-              
-              {/* Message Input */}
-              <div className="flex space-x-2">
-                <input
-                  type="text"
-                  placeholder="Type your message..."
-                  value={newMessage}
-                  onChange={(e) => setNewMessage(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
-                  className="flex-1 border border-slate-600 bg-slate-700 text-white rounded-lg px-3 py-2 placeholder-slate-400"
-                />
-                <button
-                  onClick={sendMessage}
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg"
-                >
-                  Send
-                </button>
-              </div>
+            <div className="flex space-x-2">
+              <input
+                type="text"
+                placeholder="Type your message..."
+                value={newMessage}
+                onChange={(e) => setNewMessage(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
+                className="flex-1 border border-slate-600 bg-slate-700 text-white rounded-lg px-3 py-2 placeholder-slate-400"
+              />
+              <button
+                onClick={sendMessage}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg"
+              >
+                Send
+              </button>
             </div>
           )}
         </div>
@@ -1442,52 +1387,36 @@ export default function RadioClient() {
              <div className="bg-green-700/60 rounded-lg p-4 text-center border border-green-400">
                <div className="text-2xl mb-2">🌟</div>
                <div className="text-white font-semibold">VIP Supporter</div>
-               <div className="text-green-100 text-sm">$25/month</div>
+               <div className="text-green-200 text-sm">$25/month</div>
              </div>
            </div>
            
            <div className="text-center space-y-4">
              <div className="bg-white/10 rounded-lg p-4">
-               <p className="text-white text-sm mb-3">Choose your donation method:</p>
-               <div className="flex flex-wrap justify-center gap-3">
+               <p className="text-white text-sm mb-3">Support Chill & Tune Radio:</p>
+               <div className="flex justify-center">
                  <a 
-                   href="https://www.paypal.com/donate/?hosted_button_id=YOUR_PAYPAL_ID" 
+                   href="https://cash.app/$SDH1000N" 
                    target="_blank" 
                    rel="noopener noreferrer"
-                   className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold transition-colors inline-block"
+                   className="bg-green-600 hover:bg-green-700 text-white px-8 py-4 rounded-lg font-semibold text-lg transition-colors inline-block"
                  >
-                   💳 PayPal
-                 </a>
-                 <a 
-                   href="https://cash.app/$YOUR_CASHAPP_USERNAME" 
-                   target="_blank" 
-                   rel="noopener noreferrer"
-                   className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-semibold transition-colors inline-block"
-                 >
-                   🍃 Cash App
-                 </a>
-                 <a 
-                   href="https://venmo.com/YOUR_VENMO_USERNAME" 
-                   target="_blank" 
-                   rel="noopener noreferrer"
-                   className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg font-semibold transition-colors inline-block"
-                 >
-                   🚀 Venmo
+                   🍃 Send $5 via Cash App
                  </a>
                </div>
              </div>
              
-                            <div className="text-center">
-                 <p className="text-slate-200 text-sm">Or send a one-time donation:</p>
-                 <a 
-                   href="https://www.paypal.com/donate/?hosted_button_id=YOUR_PAYPAL_ID" 
-                   target="_blank" 
-                   rel="noopener noreferrer"
-                   className="bg-yellow-600 hover:bg-yellow-700 text-white px-8 py-3 rounded-lg font-semibold text-lg transition-colors mt-2 inline-block"
-                 >
-                   💰 Donate Now
-                 </a>
-               </div>
+             <div className="text-center">
+               <p className="text-slate-200 text-sm">Or send any amount:</p>
+               <a 
+                 href="https://cash.app/$SDH1000N" 
+                 target="_blank" 
+                 rel="noopener noreferrer"
+                 className="bg-yellow-600 hover:bg-yellow-700 text-white px-8 py-3 rounded-lg font-semibold text-lg transition-colors mt-2 inline-block"
+               >
+                 💰 Donate via Cash App
+               </a>
+             </div>
            </div>
          </div>
 
