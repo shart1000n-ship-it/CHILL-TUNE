@@ -302,8 +302,8 @@ export default function RadioClient() {
           <video 
             autoplay 
             muted 
-            style="width: 100%; height: 100%; border-radius: 8px; object-fit: cover;"
-            id="live-video-feed"
+            style='width: 100%; height: 100%; border-radius: 8px; object-fit: cover;'
+            id='live-video-feed'
           ></video>
         `;
         
