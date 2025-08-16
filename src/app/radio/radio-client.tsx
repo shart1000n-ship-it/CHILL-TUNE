@@ -10,13 +10,24 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
-// Stream URLs - All Hip Hop & R&B
+// Music streams - All Hip Hop & R&B
 const STREAMS = [
-  { name: 'Hip Hop & R&B Radio', url: 'https://stream.radiojar.com/4ywdgup3bnzuv' },
-  { name: 'PowerHitz Pure R&B', url: 'https://stream.radiojar.com/4ywdgup3bnzuv' },
-  { name: 'Urban Hip Hop Mix', url: 'https://stream.radiojar.com/4ywdgup3bnzuv' },
-  { name: 'R&B Classics', url: 'https://stream.radiojar.com/4ywdgup3bnzuv' }
+  { name: "PowerHitz (Pure R&B)", url: "https://stream.radiojar.com/4ywdgup3bnzuv" },
+  { name: "Hip Hop Nation", url: "https://stream.radiojar.com/4ywdgup3bnzuv" },
+  { name: "R&B Vibes", url: "https://stream.radiojar.com/4ywdgup3bnzuv" },
+  { name: "Hip Hop Classics", url: "https://stream.radiojar.com/4ywdgup3bnzuv" }
 ];
+
+// MIDI Controller Support
+const [midiAccess, setMidiAccess] = useState<any>(null);
+const [midiInputs, setMidiInputs] = useState<any[]>([]);
+const [selectedMidiInput, setSelectedMidiInput] = useState<any>(null);
+const [midiConnected, setMidiConnected] = useState(false);
+
+  // Multi-Admin Live Streaming
+  const [activeStreamers, setActiveStreamers] = useState<{ id: string; email: string; type: "audio" | "video" }[]>([]);
+  const [streamerStreams, setStreamerStreams] = useState<{ [key: string]: MediaStream }>({});
+  const [streamerVideos, setStreamerVideos] = useState<{ [key: string]: HTMLVideoElement }>({});
 
 export default function RadioClient() {
   const { data: session } = useSession();
@@ -69,6 +80,7 @@ export default function RadioClient() {
   ]);
 
   const audioRef = useRef<HTMLAudioElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const exclusiveAudioRef = useRef<HTMLAudioElement>(null);
   const exclusiveContextRef = useRef<AudioContext | null>(null);
@@ -450,185 +462,112 @@ export default function RadioClient() {
 
   const goLiveAudio = async () => {
     try {
-      if (!process.env.NEXT_PUBLIC_TWILIO_ACCOUNT_SID) {
-        alert('Twilio is not configured. Audio streaming will be simulated.');
-        setIsLive(true);
-        setOnAirTime(0);
-        
-        // Add to active streamers
-        const streamerId = `audio-${Date.now()}`;
-        setActiveStreamers(prev => [...prev, {
-          id: streamerId,
-          email: session?.user?.email || 'unknown',
-          type: 'audio'
-        }]);
-        
-        return;
-      }
-
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        audio: true,
-        video: false 
-      });
-    
-      // Create new audio context for live streaming
-      const newAudioContext = new AudioContext();
-      setAudioContext(newAudioContext);
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       
-      const source = newAudioContext.createMediaStreamSource(stream);
-      const destination = newAudioContext.createMediaStreamDestination();
-      
-      // Create gain nodes for real-time control
-      const micGain = newAudioContext.createGain();
-      const streamGain = newAudioContext.createGain();
-      const exclusiveGain = newAudioContext.createGain();
-      
-      // Create EQ nodes for real-time control
-      const lowFilter = newAudioContext.createBiquadFilter();
-      const midFilter = newAudioContext.createBiquadFilter();
-      const highFilter = newAudioContext.createBiquadFilter();
-      
-      // Configure EQ filters
-      lowFilter.type = 'lowshelf';
-      lowFilter.frequency.setValueAtTime(200, newAudioContext.currentTime);
-      
-      midFilter.type = 'peaking';
-      midFilter.frequency.setValueAtTime(1000, newAudioContext.currentTime);
-      midFilter.Q.setValueAtTime(1, newAudioContext.currentTime);
-      
-      highFilter.type = 'highshelf';
-      highFilter.frequency.setValueAtTime(3000, newAudioContext.currentTime);
-      
-      // Set initial values
-      micGain.gain.value = micVolume;
-      streamGain.gain.value = (1 - crossfader) * streamVolume;
-      exclusiveGain.gain.value = crossfader * exclusiveVolume;
-      
-      // Apply EQ values
-      lowFilter.gain.setValueAtTime((eqLow - 0.5) * 20, newAudioContext.currentTime);
-      midFilter.gain.setValueAtTime((eqMid - 0.5) * 20, newAudioContext.currentTime);
-      highFilter.gain.setValueAtTime((eqHigh - 0.5) * 20, newAudioContext.currentTime);
-      
-      // Store nodes in state for real-time control
-      setMicGainNode(micGain);
-      setStreamGainNode(streamGain);
-      setExclusiveGainNode(exclusiveGain);
-      setEqLowNode(lowFilter);
-      setEqMidNode(midFilter);
-      setEqHighNode(highFilter);
-      
-      // Connect audio nodes: source -> mic gain -> EQ chain -> crossfader gains -> destination
-      source.connect(micGain);
-      micGain.connect(lowFilter);
-      lowFilter.connect(midFilter);
-      midFilter.connect(highFilter);
-      highFilter.connect(streamGain);
-      highFilter.connect(exclusiveGain);
-      streamGain.connect(destination);
-      exclusiveGain.connect(destination);
-      
-      setIsLive(true);
-      setOnAirTime(0);
-      
-      // Add to active streamers
+      // Add current user to active streamers
+      const currentUser = session?.user?.email || 'Unknown DJ';
       const streamerId = `audio-${Date.now()}`;
-      setActiveStreamers(prev => [...prev, {
-        id: streamerId,
-        email: session?.user?.email || 'unknown',
-        type: 'audio'
-      }]);
+      setActiveStreamers(prev => [...prev, { id: streamerId, email: currentUser, type: 'audio' as const }]);
+      setStreamerStreams(prev => ({ ...prev, [currentUser]: stream }));
       
-      alert('Going Live with Audio! Audio stream captured successfully.');
+      // Create and display audio indicator
+      const audioIndicator = document.createElement('div');
+      audioIndicator.id = 'audio-live-indicator';
+      audioIndicator.innerHTML = `
+        <div style="position: fixed; top: 20px; right: 20px; background: red; color: white; padding: 10px; border-radius: 5px; z-index: 1000;">
+          🎤 LIVE AUDIO - ${currentUser}
+        </div>
+      `;
+      document.body.appendChild(audioIndicator);
       
-      (window as any).audioStream = stream;
+      alert(`🎤 ${currentUser} is now LIVE on Audio!`);
+      console.log('Live audio started for:', currentUser);
       
     } catch (error) {
-      console.error('Failed to go live:', error);
-      alert('Live streaming failed, but you can still use the DJ console in simulated mode.');
-      setIsLive(true);
-      setOnAirTime(0);
+      console.error('Failed to start live audio:', error);
+      alert('Failed to start live audio: ' + (error as Error).message);
     }
   };
 
   const goLiveVideo = async () => {
     try {
-      if (!process.env.NEXT_PUBLIC_TWILIO_ACCOUNT_SID) {
-        alert('Twilio is not configured. Video streaming will be simulated.');
-        setIsVideoLive(true);
-        setIsLive(true);
-        setOnAirTime(0);
-        
-        // Add to active streamers
-        const streamerId = `video-${Date.now()}`;
-        setActiveStreamers(prev => [...prev, {
-          id: streamerId,
-          email: session?.user?.email || 'unknown',
-          type: 'video'
-        }]);
-        
-        return;
-      }
-
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        audio: true,
-        video: {
-          width: { ideal: 1280 },
-          height: { ideal: 720 },
-          facingMode: 'user'
-        }
-      });
-
-      const videoScreen = document.getElementById('video-live-screen');
-      if (videoScreen) {
-        videoScreen.innerHTML = `
-          <video 
-            autoplay 
-            muted 
-            style='width: 100%; height: 100%; border-radius: 8px; object-fit: cover;'
-            id='live-video-feed'
-          ></video>
-        `;
-        
-        const videoElement = document.getElementById('live-video-feed') as HTMLVideoElement;
-        if (videoElement) {
-          videoElement.srcObject = stream;
-        }
-      }
-
-      setIsVideoLive(true);
-      setIsLive(true);
-      setOnAirTime(0);
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
       
-      // Add to active streamers
+      // Add current user to active streamers
+      const currentUser = session?.user?.email || 'Unknown DJ';
       const streamerId = `video-${Date.now()}`;
-      setActiveStreamers(prev => [...prev, {
-        id: streamerId,
-        email: session?.user?.email || 'unknown',
-        type: 'video'
-      }]);
+      setActiveStreamers(prev => [...prev, { id: streamerId, email: currentUser, type: 'video' as const }]);
+      setStreamerStreams(prev => ({ ...prev, [currentUser]: stream }));
       
-      alert('Going Live with Video! Video stream captured and displayed.');
+      // Create video element for this streamer
+      const videoElement = document.createElement('video');
+      videoElement.autoplay = true;
+      videoElement.muted = true;
+      videoElement.style.width = '100%';
+      videoElement.style.height = '200px';
+      videoElement.style.borderRadius = '8px';
+      videoElement.style.marginBottom = '10px';
       
-      (window as any).videoStream = stream;
+      // Add streamer name above video
+      const streamerLabel = document.createElement('div');
+      streamerLabel.className = 'text-white text-sm font-semibold mb-2';
+      streamerLabel.textContent = `🎥 ${currentUser} - LIVE`;
+      
+      // Find the video live screen container
+      const videoContainer = document.getElementById('video-live-screen');
+      if (videoContainer) {
+        videoContainer.appendChild(streamerLabel);
+        videoContainer.appendChild(videoElement);
+        videoElement.srcObject = stream;
+        
+        // Store reference
+        setStreamerVideos(prev => ({ ...prev, [currentUser]: videoElement }));
+      }
+      
+      alert(`🎥 ${currentUser} is now LIVE on Video!`);
+      console.log('Live video started for:', currentUser);
       
     } catch (error) {
-      console.error('Failed to go live:', error);
-      alert('Live streaming failed, but you can still use the DJ console in simulated mode.');
-      setIsVideoLive(true);
-      setIsLive(true);
-      setOnAirTime(0);
+      console.error('Failed to start live video:', error);
+      alert('Failed to start live video: ' + (error as Error).message);
     }
   };
 
   const stopLive = () => {
-    setIsLive(false);
-    setIsVideoLive(false);
-    setOnAirTime(0);
-    
     // Remove current user from active streamers
-    setActiveStreamers(prev => prev.filter(s => s.email !== session?.user?.email));
+    const currentUser = session?.user?.email || 'Unknown DJ';
+    setActiveStreamers(prev => prev.filter(streamer => streamer.email !== currentUser));
     
-    alert('Live streaming stopped!');
+    // Stop and remove streams
+    const userStream = streamerStreams[currentUser];
+    if (userStream) {
+      userStream.getTracks().forEach(track => track.stop());
+      setStreamerStreams(prev => {
+        const newStreams = { ...prev };
+        delete newStreams[currentUser];
+        return newStreams;
+      });
+    }
+    
+    // Remove video elements
+    const userVideo = streamerVideos[currentUser];
+    if (userVideo) {
+      userVideo.remove();
+      setStreamerVideos(prev => {
+        const newVideos = { ...prev };
+        delete newVideos[currentUser];
+        return newVideos;
+      });
+    }
+    
+    // Remove audio indicator
+    const audioIndicator = document.getElementById('audio-live-indicator');
+    if (audioIndicator) {
+      audioIndicator.remove();
+    }
+    
+    alert(`🛑 ${currentUser} stopped broadcasting`);
+    console.log('Live broadcast stopped for:', currentUser);
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -897,459 +836,628 @@ export default function RadioClient() {
     }
   };
 
+  // Initialize MIDI Controller Support
+  useEffect(() => {
+    const initMIDI = async () => {
+      try {
+        if (navigator.requestMIDIAccess) {
+          const access = await navigator.requestMIDIAccess();
+          setMidiAccess(access);
+          
+          const inputs = Array.from(access.inputs.values());
+          setMidiInputs(inputs);
+          
+          if (inputs.length > 0) {
+            setSelectedMidiInput(inputs[0]);
+            connectMIDIInput(inputs[0]);
+          }
+          
+          console.log('MIDI access granted:', inputs.length, 'inputs available');
+        } else {
+          console.log('MIDI not supported in this browser');
+        }
+      } catch (error) {
+        console.error('Failed to initialize MIDI:', error);
+      }
+    };
+    
+    initMIDI();
+  }, []);
+
+  const connectMIDIInput = (input: any) => {
+    if (selectedMidiInput) {
+      selectedMidiInput.onmidimessage = null;
+    }
+    
+    input.onmidimessage = (event: any) => {
+      const [status, note, velocity] = event.data;
+      
+      // MIDI Control Change (CC) messages
+      if (status === 176) { // CC on channel 1
+        switch (note) {
+          case 7: // Volume slider
+            const volumeValue = velocity / 127;
+            setVolume(volumeValue);
+            handleVolumeChange({ target: { value: volumeValue.toString() } } as any);
+            break;
+          case 8: // Balance/Crossfader
+            const crossfaderValue = velocity / 127;
+            setCrossfader(crossfaderValue);
+            handleCrossfaderChange({ target: { value: crossfaderValue.toString() } } as any);
+            break;
+          case 9: // Mic Volume
+            const micValue = velocity / 127;
+            setMicVolume(micValue);
+            handleMicVolumeChange({ target: { value: micValue.toString() } } as any);
+            break;
+          case 10: // Stream Volume
+            const streamValue = velocity / 127;
+            setStreamVolume(streamValue);
+            handleStreamVolumeChange({ target: { value: streamValue.toString() } } as any);
+            break;
+          case 11: // Exclusive Volume
+            const exclusiveValue = velocity / 127;
+            setExclusiveVolume(exclusiveValue);
+            handleExclusiveVolumeChange({ target: { value: exclusiveValue.toString() } } as any);
+            break;
+        }
+      }
+      
+      // MIDI Note messages for triggering actions
+      if (status === 144 && velocity > 0) { // Note On
+        switch (note) {
+          case 36: // C2 - Go Live Audio
+            goLiveAudio();
+            break;
+          case 37: // C#2 - Go Live Video
+            goLiveVideo();
+            break;
+          case 38: // D2 - Stop Live
+            stopLive();
+            break;
+          case 39: // D#2 - Play Exclusive
+            if (fileInputRef.current) {
+              fileInputRef.current.click();
+            }
+            break;
+          case 40: // E2 - Start Podcast
+            startPodcast();
+            break;
+        }
+      }
+    };
+    
+    setSelectedMidiInput(input);
+    setMidiConnected(true);
+    console.log('MIDI input connected:', input.name);
+  };
+
   return (
-    <div className="space-y-6">
-      <div className="bg-white rounded-lg p-6 shadow-lg">
-        <h2 className="text-2xl font-bold text-gray-900 mb-4">Now Playing</h2>
-        <div className="flex items-center space-x-4">
-          <button
-            onClick={handlePlayPause}
-            className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg font-semibold transition-colors"
-          >
-            {isPlaying ? 'Pause' : 'Play'}
-          </button>
-          <div className="flex-1">
-            <div className="text-lg font-semibold text-gray-900">
-              {STREAMS[currentStreamIndex].name}
-            </div>
-            <div className="text-sm text-gray-600">Live Stream</div>
-          </div>
-          <div className="flex items-center space-x-2">
-            <input
-              type="range"
-              min="0"
-              max="1"
-              step="0.1"
-              value={volume}
-              onChange={handleVolumeChange}
-              className="w-24"
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-800 relative overflow-hidden">
+      {/* Rainy Night Background */}
+      <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-blue-900 to-slate-800">
+        {/* Rain drops */}
+        <div className="absolute inset-0 opacity-30">
+          {[...Array(50)].map((_, i) => (
+            <div
+              key={i}
+              className="absolute w-0.5 h-8 bg-blue-300 animate-pulse"
+              style={{
+                left: `${Math.random() * 100}%`,
+                animationDelay: `${Math.random() * 2}s`,
+                animationDuration: `${1 + Math.random()}s`
+              }}
             />
-            <span className="text-sm text-gray-600">{Math.round(volume * 100)}%</span>
-          </div>
-        </div>
-        <audio
-          ref={audioRef}
-          src={STREAMS[currentStreamIndex].url}
-          onPlay={() => setIsPlaying(true)}
-          onPause={() => setIsPlaying(false)}
-          onError={(e) => console.error('Audio error:', e)}
-        />
-      </div>
-
-      <div className="bg-white rounded-lg p-6 shadow-lg">
-        <h2 className="text-2xl font-bold text-gray-900 mb-4">Live Chat</h2>
-        
-        {!isSignedIn ? (
-          <div className="mb-4">
-            <input
-              type="text"
-              placeholder="Enter username"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              className="border border-gray-300 rounded-lg px-3 py-2 mr-2"
-            />
-            <button
-              onClick={() => setIsSignedIn(true)}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg"
-            >
-              Join Chat
-            </button>
-          </div>
-        ) : (
-          <div className="mb-4">
-            <span className="text-sm text-gray-600">Signed in as: {username}</span>
-            <button
-              onClick={() => setIsSignedIn(false)}
-              className="ml-2 text-blue-600 hover:text-blue-800"
-            >
-              Sign Out
-            </button>
-          </div>
-        )}
-
-        <div className="h-64 overflow-y-auto border border-gray-200 rounded-lg p-3 mb-4 bg-gray-50">
-          {messages.map((msg) => (
-            <div key={msg.id} className="mb-2">
-              <span className="font-semibold text-blue-600">{msg.username}:</span>
-              <span className="ml-2 text-gray-800">{msg.message}</span>
-              <span className="ml-2 text-xs text-gray-500">{msg.timestamp}</span>
-            </div>
           ))}
         </div>
-
-        {isSignedIn && (
-          <div className="flex space-x-2">
-            <input
-              type="text"
-              placeholder="Type your message..."
-              value={newMessage}
-              onChange={(e) => setNewMessage(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
-              className="flex-1 border border-gray-300 rounded-lg px-3 py-2"
-            />
-            <button
-              onClick={sendMessage}
-              className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg"
-            >
-              Send
-            </button>
-          </div>
-        )}
+        
+        {/* Window frame effect */}
+        <div className="absolute inset-4 border-2 border-slate-600 rounded-lg opacity-20" />
+        <div className="absolute inset-6 border border-slate-500 rounded opacity-10" />
+        
+        {/* Moon/light source */}
+        <div className="absolute top-8 right-8 w-16 h-16 bg-yellow-200 rounded-full opacity-20 blur-sm" />
+        <div className="absolute top-10 right-10 w-12 h-12 bg-yellow-100 rounded-full opacity-30 blur-sm" />
       </div>
 
-      {/* Professional DJ Console with Video Live Screen */}
-      <div className="bg-gradient-to-r from-gray-900 to-gray-800 rounded-lg p-6 shadow-2xl border border-gray-700">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-3xl font-bold text-white">🎛️ Professional DJ Console</h2>
-          <div className="text-right">
-            <div className="text-sm text-gray-300">Listeners</div>
-            <div className="text-2xl font-bold text-green-400">{listenerCount}</div>
-          </div>
-        </div>
-        
-        {!session ? (
-          <div className="text-center py-8">
+      {/* Main Content */}
+      <div className="relative z-10 container mx-auto px-4 py-8">
+        <div className="bg-white rounded-lg p-6 shadow-lg">
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">Now Playing</h2>
+          <div className="flex items-center space-x-4">
             <button
-              onClick={() => signIn()}
-              className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white px-8 py-4 rounded-lg font-semibold text-lg transition-all transform hover:scale-105"
+              onClick={handlePlayPause}
+              className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg font-semibold transition-colors"
             >
-              🔐 Sign In to Access DJ Console
+              {isPlaying ? 'Pause' : 'Play'}
             </button>
+            <div className="flex-1">
+              <div className="text-lg font-semibold text-gray-900">
+                {STREAMS[currentStreamIndex].name}
+              </div>
+              <div className="text-sm text-gray-600">Live Stream</div>
+            </div>
+            <div className="flex items-center space-x-2">
+              <input
+                type="range"
+                min="0"
+                max="1"
+                step="0.1"
+                value={volume}
+                onChange={handleVolumeChange}
+                className="w-24"
+              />
+              <span className="text-sm text-gray-600">{Math.round(volume * 100)}%</span>
+            </div>
           </div>
-        ) : (
-          <div className="space-y-6">
-            <div className="flex items-center justify-between bg-gray-800 rounded-lg p-4">
-              <span className="text-gray-300">Signed in as: <span className="text-white font-semibold">{session.user?.email}</span></span>
+          <audio
+            ref={audioRef}
+            src={STREAMS[currentStreamIndex].url}
+            onPlay={() => setIsPlaying(true)}
+            onPause={() => setIsPlaying(false)}
+            onError={(e) => console.error('Audio error:', e)}
+          />
+        </div>
+
+        <div className="bg-white rounded-lg p-6 shadow-lg">
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">Live Chat</h2>
+          
+          {!isSignedIn ? (
+            <div className="mb-4">
+              <input
+                type="text"
+                placeholder="Enter username"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                className="border border-gray-300 rounded-lg px-3 py-2 mr-2"
+              />
               <button
-                onClick={() => signOut()}
-                className="text-red-400 hover:text-red-300 transition-colors"
+                onClick={() => setIsSignedIn(true)}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg"
+              >
+                Join Chat
+              </button>
+            </div>
+          ) : (
+            <div className="mb-4">
+              <span className="text-sm text-gray-600">Signed in as: {username}</span>
+              <button
+                onClick={() => setIsSignedIn(false)}
+                className="ml-2 text-blue-600 hover:text-blue-800"
               >
                 Sign Out
               </button>
             </div>
+          )}
 
-            {isAdmin && (
-              <>
-                {/* On Air Status */}
-                {isLive && (
-                  <div className="bg-gradient-to-r from-red-600 to-red-800 border border-red-500 rounded-lg p-4 animate-pulse">
-                    <div className="text-red-100 font-bold text-xl text-center">🎙️ ON AIR</div>
-                    <div className="text-center text-red-200">
-                      Time: {formatTime(onAirTime)}
-                    </div>
-                    {activeStreamers.length > 0 && (
-                      <div className="mt-3 text-center">
-                        <div className="text-red-200 text-sm">Active Streamers:</div>
-                        {activeStreamers.map((streamer) => (
-                          <div key={streamer.id} className="text-red-100 text-xs">
-                            {streamer.email} - {streamer.type}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* Working Audio Controls */}
-                <div className="bg-gray-800 rounded-lg p-4">
-                  <h3 className="text-lg font-semibold text-white mb-4 text-center">🎵 Audio Controls</h3>
-                  
-                  {/* Status Indicator */}
-                  <div className="mb-4 p-3 bg-green-900 border border-green-600 rounded-lg">
-                    <div className="text-green-200 text-sm text-center">
-                      🎵 Audio System Active - Controls Working in Real-Time
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-4">
-                    {/* Main Volume Control */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-2">
-                        🔊 Main Volume: {Math.round(volume * 100)}%
-                      </label>
-                      <input
-                        type="range"
-                        min="0"
-                        max="1"
-                        step="0.01"
-                        value={volume}
-                        onChange={handleVolumeChange}
-                        className="w-full h-3 bg-gray-700 rounded-lg appearance-none cursor-pointer"
-                      />
-                      <div className="text-center text-xs text-gray-400 mt-1">
-                        {streamGainNode ? '✅ Connected to Audio System' : '⏳ Connecting...'}
-                      </div>
-                    </div>
-
-                    {/* Mic Volume Control */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-2">
-                        🎤 Mic Volume: {Math.round(micVolume * 100)}%
-                      </label>
-                      <input
-                        type="range"
-                        min="0"
-                        max="1"
-                        step="0.01"
-                        value={micVolume}
-                        onChange={handleMicVolumeChange}
-                        className="w-full h-3 bg-gray-700 rounded-lg appearance-none cursor-pointer"
-                      />
-                      <div className="text-center text-xs text-gray-400 mt-1">
-                        {micGainNode ? '✅ Connected to Audio System' : '⏳ Connecting...'}
-                      </div>
-                    </div>
-
-                    {/* Crossfader Control */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-2">
-                        ↔️ Crossfader: {Math.round(crossfader * 100)}%
-                      </label>
-                      <div className="flex items-center space-x-4 mb-2">
-                        <span className="text-sm text-blue-200 font-semibold">🎵 Stream</span>
-                        <input
-                          type="range"
-                          min="0"
-                          max="1"
-                          step="0.01"
-                          value={crossfader}
-                          onChange={handleCrossfaderChange}
-                          className="flex-1 h-3 bg-gray-700 rounded-lg appearance-none cursor-pointer"
-                        />
-                        <span className="text-sm text-purple-200 font-semibold">🎵 Exclusive</span>
-                      </div>
-                      <div className="flex justify-between text-sm text-gray-300 mt-2">
-                        <span className="bg-blue-600 px-2 py-1 rounded">Stream: {Math.round((1 - crossfader) * 100)}%</span>
-                        <span className="bg-purple-600 px-2 py-1 rounded">Exclusive: {Math.round(crossfader * 100)}%</span>
-                      </div>
-                      <div className="text-center text-xs text-gray-400 mt-2">
-                        {streamGainNode && exclusiveGainNode ? '✅ Crossfader Active' : '⏳ Connecting...'}
-                      </div>
-                    </div>
-
-                    {/* Individual Volume Controls */}
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-300 mb-2">
-                          🎵 Stream Volume: {Math.round(streamVolume * 100)}%
-                        </label>
-                        <input
-                          type="range"
-                          min="0"
-                          max="1"
-                          step="0.01"
-                          value={streamVolume}
-                          onChange={handleStreamVolumeChange}
-                          className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-300 mb-2">
-                          🎵 Exclusive Volume: {Math.round(exclusiveVolume * 100)}%
-                        </label>
-                        <input
-                          type="range"
-                          min="0"
-                          max="1"
-                          step="0.01"
-                          value={exclusiveVolume}
-                          onChange={handleExclusiveVolumeChange}
-                          className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Live Broadcasting Controls */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="bg-gray-800 rounded-lg p-4">
-                    <h3 className="text-lg font-semibold text-white mb-3">🎙️ Live Audio</h3>
-                    <button
-                      onClick={isLive ? stopLive : goLiveAudio}
-                      className={`w-full px-4 py-3 rounded-lg font-semibold transition-all transform hover:scale-105 ${
-                        isLive 
-                          ? 'bg-red-600 hover:bg-red-700 text-white' 
-                          : 'bg-green-600 hover:bg-green-700 text-white'
-                      }`}
-                    >
-                      {isLive ? '🛑 Stop Live' : '🎙️ Go Live Audio'}
-                    </button>
-                  </div>
-                  
-                  <div className="bg-gray-800 rounded-lg p-4">
-                    <h3 className="text-lg font-semibold text-white mb-3">📹 Live Video</h3>
-                    <button
-                      onClick={isVideoLive ? stopLive : goLiveVideo}
-                      className={`w-full px-4 py-3 rounded-lg font-semibold transition-all transform hover:scale-105 ${
-                        isVideoLive 
-                          ? 'bg-red-600 hover:bg-red-700 text-white' 
-                          : 'bg-green-600 hover:bg-green-700 text-white'
-                      }`}
-                    >
-                      {isVideoLive ? '🛑 Stop Live' : '📹 Go Live Video'}
-                    </button>
-                  </div>
-                </div>
-
-                {/* Exclusive Music Player */}
-                <div className="bg-gray-800 rounded-lg p-4">
-                  <h3 className="text-lg font-semibold text-white mb-3">🎵 Play Exclusive</h3>
-                  <div className="space-y-3">
-                    <input
-                      type="file"
-                      accept="audio/*"
-                      onChange={handleFileSelect}
-                      className="block w-full text-sm text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-purple-600 file:text-white hover:file:bg-purple-700"
-                    />
-                    {exclusiveFile && (
-                      <div className="bg-gray-700 rounded-lg p-3">
-                        <div className="text-sm text-gray-300">File: <span className="text-white">{exclusiveFile.name}</span></div>
-                        {isExclusivePlaying && (
-                          <div className="mt-3 space-y-2">
-                            <div className="text-sm text-gray-300">
-                              Duration: <span className="text-white">{formatTime(exclusiveElapsed)}</span> / <span className="text-white">{formatTime(exclusiveDuration)}</span>
-                            </div>
-                            <div className="w-full bg-gray-600 rounded-full h-2">
-                              <div 
-                                className="bg-purple-500 h-2 rounded-full transition-all duration-100"
-                                style={{ width: `${(exclusiveElapsed / exclusiveDuration) * 100}%` }}
-                              ></div>
-                            </div>
-                            <div className="text-xs text-gray-400 text-center">
-                              {Math.round((exclusiveElapsed / exclusiveDuration) * 100)}% Complete
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                    <button
-                      onClick={startExclusiveFromFile}
-                      disabled={!exclusiveFile}
-                      className="w-full bg-purple-600 hover:bg-purple-700 disabled:bg-gray-600 text-white px-6 py-3 rounded-lg font-semibold transition-all transform hover:scale-105 disabled:transform-none"
-                    >
-                      {isExclusivePlaying ? '⏸️ Stop' : '▶️ Play Exclusive'}
-                    </button>
-                  </div>
-                </div>
-
-                {/* Podcast Recording */}
-                <div className="bg-gray-800 rounded-lg p-4">
-                  <h3 className="text-lg font-semibold text-white mb-3">🎙️ Podcast Recording</h3>
-                  <div className="space-y-3">
-                    {isRecording && (
-                      <div className="bg-gray-700 rounded-lg p-3 text-center">
-                        <div className="text-red-400 font-semibold">Recording...</div>
-                        <div className="text-2xl font-bold text-white">{formatTime(recordingTime)}</div>
-                      </div>
-                    )}
-                    <div className="flex space-x-2">
-                      <button
-                        onClick={isRecording ? stopPodcast : startPodcast}
-                        className={`flex-1 px-4 py-3 rounded-lg font-semibold transition-all transform hover:scale-105 ${
-                          isRecording 
-                            ? 'bg-red-600 hover:bg-red-700 text-white' 
-                            : 'bg-green-600 hover:bg-green-700 text-white'
-                        }`}
-                      >
-                        {isRecording ? '⏹️ Stop Recording' : '🎙️ Start Recording'}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Video Live Screen */}
-                <div className="bg-gray-800 rounded-lg p-4">
-                  <h3 className="text-lg font-semibold text-white mb-3">📹 Live Video Screen</h3>
-                  <div id="video-live-screen" className="bg-gray-900 rounded-lg p-4 min-h-[300px] flex items-center justify-center">
-                    {isVideoLive ? (
-                      <div className="text-center">
-                        <div className="text-green-400 text-2xl mb-2">📹</div>
-                        <div className="text-white font-semibold">Live Video Streaming</div>
-                        <div className="text-gray-400 text-sm">Your camera feed is live</div>
-                      </div>
-                    ) : (
-                      <div className="text-center">
-                        <div className="text-gray-500 text-4xl mb-2">📹</div>
-                        <div className="text-gray-400 font-semibold">Video Screen</div>
-                        <div className="text-gray-500 text-sm">Click &quot;Go Live Video&quot; to start</div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Debug Panel */}
-                <div className="bg-gray-800 rounded-lg p-4">
-                  <h3 className="text-lg font-semibold text-white mb-4">🔧 Debug Panel</h3>
-                  <div className="grid grid-cols-2 gap-4 text-xs text-gray-300">
-                    <div>
-                      <div>Audio Context: {audioContext ? '✅ Active' : '❌ None'}</div>
-                      <div>Mic Gain: {micGainNode ? '✅ Active' : '❌ None'}</div>
-                      <div>Stream Gain: {streamGainNode ? '✅ Active' : '❌ None'}</div>
-                      <div>Exclusive Gain: {exclusiveGainNode ? '✅ Active' : '❌ None'}</div>
-                    </div>
-                    <div>
-                      <div>Crossfader: {crossfader.toFixed(2)}</div>
-                      <div>Mic Volume: {micVolume.toFixed(2)}</div>
-                      <div>Stream Volume: {streamVolume.toFixed(2)}</div>
-                      <div>Exclusive Volume: {exclusiveVolume.toFixed(2)}</div>
-                    </div>
-                  </div>
-                  <div className="mt-4 space-y-2">
-                    <button
-                      onClick={testAudio}
-                      className="w-full bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-2 rounded text-xs font-semibold"
-                    >
-                      🧪 Test Basic Audio
-                    </button>
-                    <button
-                      onClick={testAudioChain}
-                      className="w-full bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded text-xs font-semibold"
-                    >
-                      🎵 Test Audio Chain
-                    </button>
-                    <button
-                      onClick={testAudioSystem}
-                      className="w-full bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded text-xs font-semibold"
-                    >
-                      🎧 Test Audio System
-                    </button>
-                    <button
-                      onClick={testWorkingAudio}
-                      className="w-full bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded text-xs font-semibold"
-                    >
-                      🎵 Test Working Audio
-                    </button>
-                  </div>
-                </div>
-              </>
-            )}
-
-            {!isAdmin && (
-              <div className="text-center py-8">
-                <div className="text-gray-400 text-lg">
-                  DJ Console controls are only available to admin users.
-                </div>
+          <div className="h-64 overflow-y-auto border border-gray-200 rounded-lg p-3 mb-4 bg-gray-50">
+            {messages.map((msg) => (
+              <div key={msg.id} className="mb-2">
+                <span className="font-semibold text-blue-600">{msg.username}:</span>
+                <span className="ml-2 text-gray-800">{msg.message}</span>
+                <span className="ml-2 text-xs text-gray-500">{msg.timestamp}</span>
               </div>
-            )}
+            ))}
           </div>
-        )}
-      </div>
 
-      <div className="bg-white rounded-lg p-6 shadow-lg">
-        <h2 className="text-2xl font-bold text-gray-900 mb-4">Radio Schedule</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {schedule.map((slot, index) => (
-            <div key={index} className="border border-gray-200 rounded-lg p-4">
-              <div className="font-semibold text-gray-900">{slot.day}</div>
-              <div className="text-sm text-gray-600">{slot.time}</div>
-              <div className="text-purple-600 font-medium">{slot.show}</div>
+          {isSignedIn && (
+            <div className="flex space-x-2">
+              <input
+                type="text"
+                placeholder="Type your message..."
+                value={newMessage}
+                onChange={(e) => setNewMessage(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
+                className="flex-1 border border-gray-300 rounded-lg px-3 py-2"
+              />
+              <button
+                onClick={sendMessage}
+                className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg"
+              >
+                Send
+              </button>
             </div>
-          ))}
+          )}
         </div>
-      </div>
-    </div>
-  );
-}
 
+        {/* Professional DJ Console with Video Live Screen */}
+        <div className="bg-gradient-to-r from-gray-900 to-gray-800 rounded-lg p-6 shadow-2xl border border-gray-700">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-3xl font-bold text-white">🎛️ Professional DJ Console</h2>
+            <div className="text-right">
+              <div className="text-sm text-gray-300">Listeners</div>
+              <div className="text-2xl font-bold text-green-400">{listenerCount}</div>
+            </div>
+          </div>
+          
+          {!session ? (
+            <div className="text-center py-8">
+              <button
+                onClick={() => signIn()}
+                className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white px-8 py-4 rounded-lg font-semibold text-lg transition-all transform hover:scale-105"
+              >
+                🔐 Sign In to Access DJ Console
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              <div className="flex items-center justify-between bg-gray-800 rounded-lg p-4">
+                <span className="text-gray-300">Signed in as: <span className="text-white font-semibold">{session.user?.email}</span></span>
+                <button
+                  onClick={() => signOut()}
+                  className="text-red-400 hover:text-red-300 transition-colors"
+                >
+                  Sign Out
+                </button>
+              </div>
 
+              {isAdmin && (
+                <>
+                  {/* On Air Status */}
+                  {isLive && (
+                    <div className="bg-gradient-to-r from-red-600 to-red-800 border border-red-500 rounded-lg p-4 animate-pulse">
+                      <div className="text-red-100 font-bold text-xl text-center">🎙️ ON AIR</div>
+                      <div className="text-center text-red-200">
+                        Time: {formatTime(onAirTime)}
+                      </div>
+                      {activeStreamers.length > 0 && (
+                        <div className="mt-3 text-center">
+                          <div className="text-red-200 text-sm">Active Streamers:</div>
+                          {activeStreamers.map((streamer) => (
+                            <div key={streamer.id} className="text-red-100 text-xs">
+                              {streamer.email} - {streamer.type}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                   {/* Working Audio Controls */}
+                   <div className="bg-gray-800 rounded-lg p-4">
+                     <h3 className="text-lg font-semibold text-white mb-4 text-center">🎵 Audio Controls</h3>
+                     
+                     {/* Status Indicator */}
+                     <div className="mb-4 p-3 bg-green-900 border border-green-600 rounded-lg">
+                       <div className="text-green-200 text-sm text-center">
+                         🎵 Audio System Active - Controls Working in Real-Time
+                       </div>
+                     </div>
+                     
+                     <div className="space-y-4">
+                       {/* Main Volume Control */}
+                       <div>
+                         <label className="block text-sm font-medium text-gray-300 mb-2">
+                           🔊 Main Volume: {Math.round(volume * 100)}%
+                         </label>
+                         <input
+                           type="range"
+                           min="0"
+                           max="1"
+                           step="0.01"
+                           value={volume}
+                           onChange={handleVolumeChange}
+                           className="w-full h-3 bg-gray-700 rounded-lg appearance-none cursor-pointer"
+                         />
+                         <div className="text-center text-xs text-gray-400 mt-1">
+                           {streamGainNode ? '✅ Connected to Audio System' : '⏳ Connecting...'}
+                         </div>
+                       </div>
+
+                       {/* Mic Volume Control */}
+                       <div>
+                         <label className="block text-sm font-medium text-gray-300 mb-2">
+                           🎤 Mic Volume: {Math.round(micVolume * 100)}%
+                         </label>
+                         <input
+                           type="range"
+                           min="0"
+                           max="1"
+                           step="0.01"
+                           value={micVolume}
+                           onChange={handleMicVolumeChange}
+                           className="w-full h-3 bg-gray-700 rounded-lg appearance-none cursor-pointer"
+                         />
+                         <div className="text-center text-xs text-gray-400 mt-1">
+                           {micGainNode ? '✅ Connected to Audio System' : '⏳ Connecting...'}
+                         </div>
+                       </div>
+
+                       {/* Crossfader Control */}
+                       <div>
+                         <label className="block text-sm font-medium text-gray-300 mb-2">
+                           ↔️ Crossfader: {Math.round(crossfader * 100)}%
+                         </label>
+                         <div className="flex items-center space-x-4 mb-2">
+                           <span className="text-sm text-blue-200 font-semibold">🎵 Stream</span>
+                           <input
+                             type="range"
+                             min="0"
+                             max="1"
+                             step="0.01"
+                             value={crossfader}
+                             onChange={handleCrossfaderChange}
+                             className="flex-1 h-3 bg-gray-700 rounded-lg appearance-none cursor-pointer"
+                           />
+                           <span className="text-sm text-purple-200 font-semibold">🎵 Exclusive</span>
+                         </div>
+                         <div className="flex justify-between text-sm text-gray-300 mt-2">
+                           <span className="bg-blue-600 px-2 py-1 rounded">Stream: {Math.round((1 - crossfader) * 100)}%</span>
+                           <span className="bg-purple-600 px-2 py-1 rounded">Exclusive: {Math.round(crossfader * 100)}%</span>
+                         </div>
+                         <div className="text-center text-xs text-gray-400 mt-2">
+                           {streamGainNode && exclusiveGainNode ? '✅ Crossfader Active' : '⏳ Connecting...'}
+                         </div>
+                       </div>
+
+                       {/* Individual Volume Controls */}
+                       <div className="grid grid-cols-2 gap-4">
+                         <div>
+                           <label className="block text-sm font-medium text-gray-300 mb-2">
+                             🎵 Stream Volume: {Math.round(streamVolume * 100)}%
+                           </label>
+                           <input
+                             type="range"
+                             min="0"
+                             max="1"
+                             step="0.01"
+                             value={streamVolume}
+                             onChange={handleStreamVolumeChange}
+                             className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
+                           />
+                         </div>
+                         <div>
+                           <label className="block text-sm font-medium text-gray-300 mb-2">
+                             🎵 Exclusive Volume: {Math.round(exclusiveVolume * 100)}%
+                           </label>
+                           <input
+                             type="range"
+                             min="0"
+                             max="1"
+                             step="0.01"
+                             value={exclusiveVolume}
+                             onChange={handleExclusiveVolumeChange}
+                             className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
+                           />
+                         </div>
+                       </div>
+                     </div>
+                   </div>
+
+                   {/* MIDI Controller Support */}
+                   <div className="bg-gray-800 rounded-lg p-4">
+                     <h3 className="text-lg font-semibold text-white mb-4 text-center">🎹 MIDI Controller</h3>
+                     <div className="space-y-4">
+                       <div className="flex items-center justify-between">
+                         <span className="text-gray-300">MIDI Status:</span>
+                         <span className={`px-2 py-1 rounded text-xs font-semibold ${
+                           midiConnected ? 'bg-green-600 text-white' : 'bg-red-600 text-white'
+                         }`}>
+                           {midiConnected ? '✅ Connected' : '❌ Disconnected'}
+                         </span>
+                       </div>
+                       
+                       {midiInputs.length > 0 && (
+                         <div>
+                           <label className="block text-sm font-medium text-gray-300 mb-2">
+                             Select MIDI Input:
+                           </label>
+                           <select
+                             value={selectedMidiInput?.id || ''}
+                             onChange={(e) => {
+                               const input = midiInputs.find(i => i.id === e.target.value);
+                               if (input) connectMIDIInput(input);
+                             }}
+                             className="w-full bg-gray-700 text-white rounded px-3 py-2"
+                           >
+                             {midiInputs.map((input) => (
+                               <option key={input.id} value={input.id}>
+                                 {input.name || input.id}
+                               </option>
+                             ))}
+                           </select>
+                         </div>
+                       )}
+                       
+                       <div className="text-xs text-gray-400">
+                         <div>🎹 MIDI Controls:</div>
+                         <div>CC7: Main Volume | CC8: Crossfader | CC9: Mic Volume</div>
+                         <div>CC10: Stream Volume | CC11: Exclusive Volume</div>
+                         <div>C2: Go Live Audio | C#2: Go Live Video | D2: Stop Live</div>
+                         <div>D#2: Play Exclusive | E2: Start Podcast</div>
+                       </div>
+                     </div>
+                   </div>
+
+                   {/* Live Broadcasting Controls */}
+                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                     <div className="bg-gray-800 rounded-lg p-4">
+                       <h3 className="text-lg font-semibold text-white mb-3">🎙️ Live Audio</h3>
+                       <button
+                         onClick={isLive ? stopLive : goLiveAudio}
+                         className={`w-full px-4 py-3 rounded-lg font-semibold transition-all transform hover:scale-105 ${
+                           isLive 
+                             ? 'bg-red-600 hover:bg-red-700 text-white' 
+                             : 'bg-green-600 hover:bg-green-700 text-white'
+                         }`}
+                       >
+                         {isLive ? '🛑 Stop Live' : '🎙️ Go Live Audio'}
+                       </button>
+                     </div>
+                     
+                     <div className="bg-gray-800 rounded-lg p-4">
+                       <h3 className="text-lg font-semibold text-white mb-3">📹 Live Video</h3>
+                       <button
+                         onClick={isVideoLive ? stopLive : goLiveVideo}
+                         className={`w-full px-4 py-3 rounded-lg font-semibold transition-all transform hover:scale-105 ${
+                           isVideoLive 
+                             ? 'bg-red-600 hover:bg-red-700 text-white' 
+                             : 'bg-green-600 hover:bg-green-700 text-white'
+                         }`}
+                       >
+                         {isVideoLive ? '🛑 Stop Live' : '📹 Go Live Video'}
+                       </button>
+                     </div>
+                   </div>
+
+                   {/* Exclusive Music Player */}
+                   <div className="bg-gray-800 rounded-lg p-4">
+                     <h3 className="text-lg font-semibold text-white mb-3">🎵 Play Exclusive</h3>
+                     <div className="space-y-3">
+                       <input
+                         ref={fileInputRef}
+                         type="file"
+                         accept="audio/*"
+                         onChange={handleFileSelect}
+                         className="block w-full text-sm text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-purple-600 file:text-white hover:file:bg-purple-700"
+                       />
+                       {exclusiveFile && (
+                         <div className="bg-gray-700 rounded-lg p-3">
+                           <div className="text-sm text-gray-300">File: <span className="text-white">{exclusiveFile.name}</span></div>
+                           {isExclusivePlaying && (
+                             <div className="mt-3 space-y-2">
+                               <div className="text-sm text-gray-300">
+                                 Duration: <span className="text-white">{formatTime(exclusiveElapsed)}</span> / <span className="text-white">{formatTime(exclusiveDuration)}</span>
+                               </div>
+                               <div className="w-full bg-gray-600 rounded-full h-2">
+                                 <div 
+                                   className="bg-purple-500 h-2 rounded-full transition-all duration-100"
+                                   style={{ width: `${(exclusiveElapsed / exclusiveDuration) * 100}%` }}
+                                 ></div>
+                               </div>
+                               <div className="text-xs text-gray-400 text-center">
+                                 {Math.round((exclusiveElapsed / exclusiveDuration) * 100)}% Complete
+                               </div>
+                             </div>
+                           )}
+                         </div>
+                       )}
+                       <button
+                         onClick={startExclusiveFromFile}
+                         disabled={!exclusiveFile}
+                         className="w-full bg-purple-600 hover:bg-purple-700 disabled:bg-gray-600 text-white px-6 py-3 rounded-lg font-semibold transition-all transform hover:scale-105 disabled:transform-none"
+                       >
+                         {isExclusivePlaying ? '⏸️ Stop' : '▶️ Play Exclusive'}
+                       </button>
+                     </div>
+                   </div>
+
+                   {/* Podcast Recording */}
+                   <div className="bg-gray-800 rounded-lg p-4">
+                     <h3 className="text-lg font-semibold text-white mb-3">🎙️ Podcast Recording</h3>
+                     <div className="space-y-3">
+                       {isRecording && (
+                         <div className="bg-gray-700 rounded-lg p-3 text-center">
+                           <div className="text-red-400 font-semibold">Recording...</div>
+                           <div className="text-2xl font-bold text-white">{formatTime(recordingTime)}</div>
+                         </div>
+                       )}
+                       <div className="flex space-x-2">
+                         <button
+                           onClick={isRecording ? stopPodcast : startPodcast}
+                           className={`flex-1 px-4 py-3 rounded-lg font-semibold transition-all transform hover:scale-105 ${
+                             isRecording 
+                               ? 'bg-red-600 hover:bg-red-700 text-white' 
+                               : 'bg-green-600 hover:bg-green-700 text-white'
+                           }`}
+                         >
+                           {isRecording ? '⏹️ Stop Recording' : '🎙️ Start Recording'}
+                         </button>
+                       </div>
+                     </div>
+                   </div>
+
+                   {/* Video Live Screen */}
+                   <div className="bg-gray-800 rounded-lg p-4">
+                     <h3 className="text-lg font-semibold text-white mb-3">📹 Live Video Screen</h3>
+                     <div id="video-live-screen" className="bg-gray-900 rounded-lg p-4 min-h-[300px] flex items-center justify-center">
+                       {isVideoLive ? (
+                         <div className="text-center">
+                           <div className="text-green-400 text-2xl mb-2">📹</div>
+                           <div className="text-white font-semibold">Live Video Streaming</div>
+                           <div className="text-gray-400 text-sm">Your camera feed is live</div>
+                         </div>
+                       ) : (
+                         <div className="text-center">
+                           <div className="text-gray-500 text-4xl mb-2">📹</div>
+                           <div className="text-gray-400 font-semibold">Video Screen</div>
+                           <div className="text-gray-500 text-sm">Click &quot;Go Live Video&quot; to start</div>
+                         </div>
+                       )}
+                     </div>
+                   </div>
+
+                   {/* Debug Panel */}
+                   <div className="bg-gray-800 rounded-lg p-4">
+                     <h3 className="text-lg font-semibold text-white mb-4">🔧 Debug Panel</h3>
+                     <div className="grid grid-cols-2 gap-4 text-xs text-gray-300">
+                       <div>
+                         <div>Audio Context: {audioContext ? '✅ Active' : '❌ None'}</div>
+                         <div>Mic Gain: {micGainNode ? '✅ Active' : '❌ None'}</div>
+                         <div>Stream Gain: {streamGainNode ? '✅ Active' : '❌ None'}</div>
+                         <div>Exclusive Gain: {exclusiveGainNode ? '✅ Active' : '❌ None'}</div>
+                       </div>
+                       <div>
+                         <div>Crossfader: {crossfader.toFixed(2)}</div>
+                         <div>Mic Volume: {micVolume.toFixed(2)}</div>
+                         <div>Stream Volume: {streamVolume.toFixed(2)}</div>
+                         <div>Exclusive Volume: {exclusiveVolume.toFixed(2)}</div>
+                       </div>
+                     </div>
+                     <div className="mt-4 space-y-2">
+                       <button
+                         onClick={testAudio}
+                         className="w-full bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-2 rounded text-xs font-semibold"
+                       >
+                         🧪 Test Basic Audio
+                       </button>
+                       <button
+                         onClick={testAudioChain}
+                         className="w-full bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded text-xs font-semibold"
+                       >
+                         🎵 Test Audio Chain
+                       </button>
+                       <button
+                         onClick={testAudioSystem}
+                         className="w-full bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded text-xs font-semibold"
+                       >
+                         🎧 Test Audio System
+                       </button>
+                       <button
+                         onClick={testWorkingAudio}
+                         className="w-full bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded text-xs font-semibold"
+                       >
+                         🎵 Test Working Audio
+                       </button>
+                     </div>
+                   </div>
+                 </>
+               )}
+
+               {!isAdmin && (
+                 <div className="text-center py-8">
+                   <div className="text-gray-400 text-lg">
+                     DJ Console controls are only available to admin users.
+                   </div>
+                 </div>
+               )}
+             </div>
+           )}
+         </div>
+
+         <div className="bg-white rounded-lg p-6 shadow-lg">
+           <h2 className="text-2xl font-bold text-gray-900 mb-4">Radio Schedule</h2>
+           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+             {schedule.map((slot, index) => (
+               <div key={index} className="border border-gray-200 rounded-lg p-4">
+                 <div className="font-semibold text-gray-900">{slot.day}</div>
+                 <div className="text-sm text-gray-600">{slot.time}</div>
+                 <div className="text-purple-600 font-medium">{slot.show}</div>
+               </div>
+             ))}
+           </div>
+         </div>
+       </div>
+     </div>
+   );
+ }
