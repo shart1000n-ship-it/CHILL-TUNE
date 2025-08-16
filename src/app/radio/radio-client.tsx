@@ -145,9 +145,15 @@ export default function RadioClient() {
       // Use Supabase Realtime for chat
       const channel = supabase.channel('chat');
       
-      channel.on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, (payload) => {
+      channel.on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, (payload: any) => {
         if (payload.new) {
-          setMessages(prev => [...prev, payload.new]);
+          const newMessage = {
+            id: payload.new.id || Date.now().toString(),
+            username: payload.new.username || 'Anonymous',
+            message: payload.new.message || '',
+            timestamp: payload.new.timestamp || new Date().toLocaleTimeString()
+          };
+          setMessages(prev => [...prev, newMessage]);
         }
       });
 
@@ -213,7 +219,7 @@ export default function RadioClient() {
         
         midiAccess.inputs.forEach((input) => {
           input.onmidimessage = (event) => {
-            if (event.data[0] === 176) { // Control Change
+            if (event.data && event.data[0] === 176) { // Control Change
               if (event.data[1] === 7) { // Volume
                 setVolume(event.data[2] / 127);
               } else if (event.data[1] === 8) { // Crossfader
@@ -374,7 +380,7 @@ export default function RadioClient() {
 
   const stopPodcast = () => {
     if (mediaRecorderRef.current && isRecording) {
-      mediaRecorder.current.stop();
+      mediaRecorderRef.current.stop();
       setIsRecording(false);
     }
   };
