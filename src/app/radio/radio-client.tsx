@@ -94,7 +94,12 @@ export default function RadioClient() {
       streamGainNodeRef.current.gain.value = (1 - crossfader) * streamVolume;
       exclusiveGainNodeRef.current.gain.value = crossfader * exclusiveVolume;
     }
-  }, [crossfader, streamVolume, exclusiveVolume]);
+    
+    // Also update exclusive track volume if it's currently playing
+    if (exclusiveGainNodeRef.current && isExclusivePlaying) {
+      exclusiveGainNodeRef.current.gain.value = crossfader * exclusiveVolume;
+    }
+  }, [crossfader, streamVolume, exclusiveVolume, isExclusivePlaying]);
 
   // Moving timestamp for exclusive tracks
   useEffect(() => {
@@ -451,17 +456,28 @@ export default function RadioClient() {
       setExclusiveDuration(Math.floor(audioBuffer.duration));
       setExclusiveElapsed(0);
       setIsExclusivePlaying(true);
-      setExclusiveStartTime(Date.now()); // Start timestamp for exclusive track
+      setExclusiveStartTime(Date.now());
 
+      // Create gain node for crossfader control
+      const gainNode = exclusiveContextRef.current.createGain();
+      exclusiveGainNodeRef.current = gainNode;
+      
+      // Apply crossfader effect
+      gainNode.gain.value = crossfader * exclusiveVolume;
+      
       const source = exclusiveContextRef.current.createBufferSource();
       source.buffer = audioBuffer;
-      source.connect(exclusiveContextRef.current.destination);
+      
+      // Connect: source -> gain -> destination
+      source.connect(gainNode);
+      gainNode.connect(exclusiveContextRef.current.destination);
+      
       source.start();
 
       source.onended = () => {
         setIsExclusivePlaying(false);
         setExclusiveElapsed(0);
-        setExclusiveStartTime(0); // Reset start time
+        setExclusiveStartTime(0);
       };
 
     } catch (error) {
@@ -662,16 +678,16 @@ export default function RadioClient() {
                   </div>
                 )}
 
-                {/* Crossfader Controls */}
-                <div className="bg-gray-800 rounded-lg p-4">
-                  <h3 className="text-lg font-semibold text-white mb-4">Crossfader Control</h3>
+                {/* Crossfader Controls - Moved to top for visibility */}
+                <div className="bg-gradient-to-r from-blue-900 to-purple-900 rounded-lg p-4 border border-blue-700">
+                  <h3 className="text-lg font-semibold text-white mb-4 text-center">🎛️ Professional Crossfader</h3>
                   <div className="space-y-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-2">
-                        Crossfader: {Math.round(crossfader * 100)}%
+                      <label className="block text-sm font-medium text-white mb-2 text-center">
+                        Crossfader Position: {Math.round(crossfader * 100)}%
                       </label>
-                      <div className="flex items-center space-x-4">
-                        <span className="text-xs text-gray-400">Stream</span>
+                      <div className="flex items-center space-x-4 mb-2">
+                        <span className="text-sm text-blue-200 font-semibold">🎵 Stream</span>
                         <input
                           type="range"
                           min="0"
@@ -679,20 +695,20 @@ export default function RadioClient() {
                           step="0.01"
                           value={crossfader}
                           onChange={(e) => setCrossfader(parseFloat(e.target.value))}
-                          className="flex-1 h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
+                          className="flex-1 h-3 bg-gray-700 rounded-lg appearance-none cursor-pointer slider"
                         />
-                        <span className="text-xs text-gray-400">Exclusive</span>
+                        <span className="text-sm text-purple-200 font-semibold">🎵 Exclusive</span>
                       </div>
-                      <div className="flex justify-between text-xs text-gray-400 mt-1">
-                        <span>Stream: {Math.round((1 - crossfader) * 100)}%</span>
-                        <span>Exclusive: {Math.round(crossfader * 100)}%</span>
+                      <div className="flex justify-between text-sm text-gray-300 mt-2">
+                        <span className="bg-blue-600 px-2 py-1 rounded">Stream: {Math.round((1 - crossfader) * 100)}%</span>
+                        <span className="bg-purple-600 px-2 py-1 rounded">Exclusive: {Math.round(crossfader * 100)}%</span>
                       </div>
                     </div>
                     
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-sm font-medium text-gray-300 mb-2">
-                          Stream Volume: {Math.round(streamVolume * 100)}%
+                        <label className="block text-sm font-medium text-blue-200 mb-2">
+                          🎵 Stream Volume: {Math.round(streamVolume * 100)}%
                         </label>
                         <input
                           type="range"
@@ -705,8 +721,8 @@ export default function RadioClient() {
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-300 mb-2">
-                          Exclusive Volume: {Math.round(exclusiveVolume * 100)}%
+                        <label className="block text-sm font-medium text-purple-200 mb-2">
+                          🎵 Exclusive Volume: {Math.round(exclusiveVolume * 100)}%
                         </label>
                         <input
                           type="range"
