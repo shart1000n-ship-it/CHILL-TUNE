@@ -11,12 +11,12 @@ const supabase = createClient(
 );
 
 export default function RadioClient() {
-  // Music streams - All Hip Hop & R&B (using one reliable stream)
+  // Music streams - All Hip Hop & R&B
   const STREAMS = [
-    { name: "PowerHitz (Pure R&B)", url: "https://ice1.somafm.com/defcon-128-mp3", genre: "R&B" },
-    { name: "Hip Hop Nation", url: "https://ice1.somafm.com/defcon-128-mp3", genre: "Hip-Hop" },
-    { name: "R&B Vibes", url: "https://ice1.somafm.com/defcon-128-mp3", genre: "R&B" },
-    { name: "Hip Hop Classics", url: "https://ice1.somafm.com/defcon-128-mp3", genre: "Hip-Hop" }
+    { name: "PowerHitz (Pure R&B)", url: "https://stream.radiojar.com/4ywdgup3bnzuv", genre: "R&B" },
+    { name: "Hip Hop Nation", url: "https://stream.radiojar.com/4ywdgup3bnzuv", genre: "Hip-Hop" },
+    { name: "R&B Vibes", url: "https://stream.radiojar.com/4ywdgup3bnzuv", genre: "R&B" },
+    { name: "Hip Hop Classics", url: "https://stream.radiojar.com/4ywdgup3bnzuv", genre: "Hip-Hop" }
   ];
 
   // MIDI Controller Support
