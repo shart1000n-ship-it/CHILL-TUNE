@@ -10,90 +10,75 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
-// Music streams - All Hip Hop & R&B
-const STREAMS = [
-  { name: "PowerHitz (Pure R&B)", url: "https://stream.radiojar.com/4ywdgup3bnzuv" },
-  { name: "Hip Hop Nation", url: "https://stream.radiojar.com/4ywdgup3bnzuv" },
-  { name: "R&B Vibes", url: "https://stream.radiojar.com/4ywdgup3bnzuv" },
-  { name: "Hip Hop Classics", url: "https://stream.radiojar.com/4ywdgup3bnzuv" }
-];
+export default function RadioClient() {
+  // Music streams - All Hip Hop & R&B
+  const STREAMS = [
+    { name: "PowerHitz (Pure R&B)", url: "https://stream.radiojar.com/4ywdgup3bnzuv" },
+    { name: "Hip Hop Nation", url: "https://stream.radiojar.com/4ywdgup3bnzuv" },
+    { name: "R&B Vibes", url: "https://stream.radiojar.com/4ywdgup3bnzuv" },
+    { name: "Hip Hop Classics", url: "https://stream.radiojar.com/4ywdgup3bnzuv" }
+  ];
 
-// MIDI Controller Support
-const [midiAccess, setMidiAccess] = useState<any>(null);
-const [midiInputs, setMidiInputs] = useState<any[]>([]);
-const [selectedMidiInput, setSelectedMidiInput] = useState<any>(null);
-const [midiConnected, setMidiConnected] = useState(false);
+  // MIDI Controller Support
+  const [midiAccess, setMidiAccess] = useState<any>(null);
+  const [midiInputs, setMidiInputs] = useState<any[]>([]);
+  const [selectedMidiInput, setSelectedMidiInput] = useState<any>(null);
+  const [midiConnected, setMidiConnected] = useState(false);
 
   // Multi-Admin Live Streaming
   const [activeStreamers, setActiveStreamers] = useState<{ id: string; email: string; type: "audio" | "video" }[]>([]);
   const [streamerStreams, setStreamerStreams] = useState<{ [key: string]: MediaStream }>({});
   const [streamerVideos, setStreamerVideos] = useState<{ [key: string]: HTMLVideoElement }>({});
 
-export default function RadioClient() {
-  const { data: session } = useSession();
-  const [currentStreamIndex, setCurrentStreamIndex] = useState(0);
+  // State variables
   const [isPlaying, setIsPlaying] = useState(false);
-  const [volume, setVolume] = useState(0.7);
-  const [micVolume, setMicVolume] = useState(0.5);
-  const [crossfader, setCrossfader] = useState(0.5);
+  const [currentStreamIndex, setCurrentStreamIndex] = useState(0);
+  const [volume, setVolume] = useState(0.5);
+  const [isSignedIn, setIsSignedIn] = useState(false);
+  const [username, setUsername] = useState('');
+  const [messages, setMessages] = useState<Array<{ id: string; username: string; message: string; timestamp: string }>>([]);
+  const [newMessage, setNewMessage] = useState('');
   const [isLive, setIsLive] = useState(false);
   const [isVideoLive, setIsVideoLive] = useState(false);
   const [onAirTime, setOnAirTime] = useState(0);
-  const [messages, setMessages] = useState<Array<{id: string, username: string, message: string, timestamp: string}>>([]);
-  const [newMessage, setNewMessage] = useState('');
-  const [username, setUsername] = useState('');
-  const [isSignedIn, setIsSignedIn] = useState(false);
   const [exclusiveFile, setExclusiveFile] = useState<File | null>(null);
+  const [isExclusivePlaying, setIsExclusivePlaying] = useState(false);
   const [exclusiveDuration, setExclusiveDuration] = useState(0);
   const [exclusiveElapsed, setExclusiveElapsed] = useState(0);
-  const [isExclusivePlaying, setIsExclusivePlaying] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
-  const [listenerCount, setListenerCount] = useState(0);
-  const [eqLow, setEqLow] = useState(0.5);
-  const [eqMid, setEqMid] = useState(0.5);
-  const [eqHigh, setEqHigh] = useState(0.5);
-  
-  // New states for crossfader and multi-admin
-  const [streamVolume, setStreamVolume] = useState(0.7);
-  const [exclusiveVolume, setExclusiveVolume] = useState(0.7);
-  const [activeStreamers, setActiveStreamers] = useState<Array<{id: string, email: string, type: 'audio' | 'video'}>>([]);
-  const [exclusiveStartTime, setExclusiveStartTime] = useState<number>(0);
-  
-  // Audio processing nodes for real-time control
+  const [listenerCount, setListenerCount] = useState(42);
+  const [crossfader, setCrossfader] = useState(0.5);
+  const [micVolume, setMicVolume] = useState(0.5);
+  const [streamVolume, setStreamVolume] = useState(0.5);
+  const [exclusiveVolume, setExclusiveVolume] = useState(0.5);
   const [audioContext, setAudioContext] = useState<AudioContext | null>(null);
   const [micGainNode, setMicGainNode] = useState<GainNode | null>(null);
   const [streamGainNode, setStreamGainNode] = useState<GainNode | null>(null);
   const [exclusiveGainNode, setExclusiveGainNode] = useState<GainNode | null>(null);
-  const [eqLowNode, setEqLowNode] = useState<BiquadFilterNode | null>(null);
-  const [eqMidNode, setEqMidNode] = useState<BiquadFilterNode | null>(null);
-  const [eqHighNode, setEqHighNode] = useState<BiquadFilterNode | null>(null);
-  
-  const [schedule] = useState([
-    { day: 'Monday', time: '6:00 PM - 10:00 PM', show: 'The Evening Mix' },
-    { day: 'Tuesday', time: '7:00 PM - 11:00 PM', show: 'R&B Classics' },
-    { day: 'Wednesday', time: '8:00 PM - 12:00 AM', show: 'Midnight Vibes' },
-    { day: 'Thursday', time: '6:00 PM - 10:00 PM', show: 'Throwback Thursday' },
-    { day: 'Friday', time: '7:00 PM - 1:00 AM', show: 'Weekend Kickoff' },
-    { day: 'Saturday', time: '2:00 PM - 8:00 PM', show: 'Saturday Sessions' },
-    { day: 'Sunday', time: '3:00 PM - 9:00 PM', show: 'Sunday Chill' }
-  ]);
 
+  // Refs
   const audioRef = useRef<HTMLAudioElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const exclusiveAudioRef = useRef<HTMLAudioElement>(null);
-  const exclusiveContextRef = useRef<AudioContext | null>(null);
-  const exclusiveSourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
-  const exclusiveDestinationRef = useRef<MediaStreamAudioDestinationNode | null>(null);
-  const exclusiveGainNodeRef = useRef<GainNode | null>(null);
-  const streamGainNodeRef = useRef<GainNode | null>(null);
 
-  // Check if user is admin
-  const isAdmin = session?.user?.email && (
-    process.env.NEXT_PUBLIC_ADMIN_EMAILS?.includes(session.user.email) ||
-    session.user.email === 'chillandtune.fm'
-  );
+  // Session and admin check
+  const { data: session } = useSession();
+  const isAdmin = session?.user?.email === 'chillandtune.fm' || 
+                  (process.env.NEXT_PUBLIC_ADMIN_EMAILS && 
+                   process.env.NEXT_PUBLIC_ADMIN_EMAILS.includes(session?.user?.email || ''));
+
+  // Radio schedule
+  const schedule = [
+    { day: 'Monday', time: '6:00 PM - 10:00 PM', show: 'Hip Hop Classics' },
+    { day: 'Tuesday', time: '6:00 PM - 10:00 PM', show: 'R&B Vibes' },
+    { day: 'Wednesday', time: '6:00 PM - 10:00 PM', show: 'Hip Hop Nation' },
+    { day: 'Thursday', time: '6:00 PM - 10:00 PM', show: 'PowerHitz Pure R&B' },
+    { day: 'Friday', time: '6:00 PM - 12:00 AM', show: 'Weekend Mix' },
+    { day: 'Saturday', time: '2:00 PM - 12:00 AM', show: 'Saturday Sessions' },
+    { day: 'Sunday', time: '2:00 PM - 10:00 PM', show: 'Sunday Chill' }
+  ];
 
   // Initialize audio system when component mounts
   useEffect(() => {
@@ -187,38 +172,24 @@ export default function RadioClient() {
     }
   }, [crossfader, streamVolume, exclusiveVolume, exclusiveGainNode, streamGainNode, audioContext]);
 
-  // Real-time EQ control
-  useEffect(() => {
-    if (eqLowNode && eqMidNode && eqHighNode && audioContext) {
-      // Apply EQ values in real-time
-      eqLowNode.gain.setValueAtTime((eqLow - 0.5) * 20, audioContext.currentTime);
-      eqMidNode.gain.setValueAtTime((eqMid - 0.5) * 20, audioContext.currentTime);
-      eqHighNode.gain.setValueAtTime((eqHigh - 0.5) * 20, audioContext.currentTime);
-      
-      console.log('EQ updated:', { low: eqLow, mid: eqMid, high: eqHigh });
-    }
-  }, [eqLow, eqMid, eqHigh, eqLowNode, eqMidNode, eqHighNode, audioContext]);
-
   // Moving timestamp for exclusive tracks
   useEffect(() => {
     let interval: any;
-    if (isExclusivePlaying && exclusiveStartTime > 0) {
+    if (isExclusivePlaying && exclusiveDuration > 0) {
       interval = setInterval(() => {
-        const currentTime = Date.now();
-        const elapsed = Math.floor((currentTime - exclusiveStartTime) / 1000);
-        setExclusiveElapsed(elapsed);
-        
-        if (elapsed >= exclusiveDuration) {
-          setIsExclusivePlaying(false);
-          setExclusiveElapsed(0);
-          setExclusiveStartTime(0);
-        }
+        setExclusiveElapsed(prev => {
+          if (prev >= exclusiveDuration) {
+            setIsExclusivePlaying(false);
+            return 0;
+          }
+          return prev + 1;
+        });
       }, 100); // Update every 100ms for smooth movement
     }
     return () => {
       if (interval) clearInterval(interval);
     };
-  }, [isExclusivePlaying, exclusiveStartTime, exclusiveDuration]);
+  }, [isExclusivePlaying, exclusiveDuration]);
 
   // Stream cycling effect
   useEffect(() => {
@@ -408,32 +379,7 @@ export default function RadioClient() {
     }
   };
 
-  const handleEQChange = (type: 'low' | 'mid' | 'high', value: number) => {
-    if (!audioContext) return;
-    
-    switch (type) {
-      case 'low':
-        setEqLow(value);
-        if (eqLowNode) {
-          eqLowNode.gain.setValueAtTime((value - 0.5) * 20, audioContext.currentTime);
-        }
-        break;
-      case 'mid':
-        setEqMid(value);
-        if (eqMidNode) {
-          eqMidNode.gain.setValueAtTime((value - 0.5) * 20, audioContext.currentTime);
-        }
-        break;
-      case 'high':
-        setEqHigh(value);
-        if (eqHighNode) {
-          eqHighNode.gain.setValueAtTime((value - 0.5) * 20, audioContext.currentTime);
-        }
-        break;
-    }
-    
-    console.log(`${type} EQ changed to:`, value);
-  };
+
 
   const enableMIDI = async () => {
     try {
@@ -598,7 +544,7 @@ export default function RadioClient() {
       setExclusiveDuration(Math.floor(audioBuffer.duration));
       setExclusiveElapsed(0);
       setIsExclusivePlaying(true);
-      setExclusiveStartTime(Date.now());
+
 
       // Create gain node for crossfader control
       const gainNode = currentContext.createGain();
@@ -627,7 +573,7 @@ export default function RadioClient() {
       source.onended = () => {
         setIsExclusivePlaying(false);
         setExclusiveElapsed(0);
-        setExclusiveStartTime(0);
+  
         console.log('Exclusive track ended');
       };
 
@@ -736,19 +682,10 @@ export default function RadioClient() {
         console.log('✅ Mic gain node connected');
       }
       
-      if (eqLowNode && eqMidNode && eqHighNode) {
-        if (micGainNode) {
-          micGainNode.connect(eqLowNode);
-          eqLowNode.connect(eqMidNode);
-          eqMidNode.connect(eqHighNode);
-          console.log('✅ EQ chain connected');
-        }
-      }
-      
       if (streamGainNode && exclusiveGainNode) {
-        if (eqHighNode) {
-          eqHighNode.connect(streamGainNode);
-          eqHighNode.connect(exclusiveGainNode);
+        if (micGainNode) {
+          micGainNode.connect(streamGainNode);
+          micGainNode.connect(exclusiveGainNode);
           console.log('✅ Crossfader nodes connected');
         }
       }
