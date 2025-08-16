@@ -13,7 +13,7 @@ const supabase = createClient(
 
 // Stream URLs
 const STREAMS = [
-  { name: 'PowerHitz (Pure R&B)', url: 'https://stream.radiojar.com/4ywdgup3bnzuv' }
+  { name: 'Live365 - Hip Hop & R&B', url: 'https://stream.live365.com/a48930' }
 ];
 
 export default function RadioClient() {
@@ -240,13 +240,31 @@ export default function RadioClient() {
         const room = new Room();
         roomRef.current = room;
 
-        const token = await fetch('/api/livekit-token', {
+        // Check if LiveKit is configured
+        if (!process.env.NEXT_PUBLIC_LIVEKIT_URL) {
+          alert('LiveKit is not configured. Audio streaming will be simulated.');
+          setIsLive(true);
+          setOnAirTime(0);
+          return;
+        }
+
+        const tokenResponse = await fetch('/api/livekit-token', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ room: 'chill-tune-radio', participant: 'dj' })
-        }).then(res => res.json());
+        });
 
-        await room.connect(process.env.NEXT_PUBLIC_LIVEKIT_URL!, token.token);
+        if (!tokenResponse.ok) {
+          throw new Error('Failed to get LiveKit token');
+        }
+
+        const tokenData = await tokenResponse.json();
+        
+        if (!tokenData.token) {
+          throw new Error('Invalid token response');
+        }
+
+        await room.connect(process.env.NEXT_PUBLIC_LIVEKIT_URL, tokenData.token);
         
         const localParticipant = room.localParticipant;
         if (localParticipant) {
@@ -261,6 +279,10 @@ export default function RadioClient() {
         setOnAirTime(0);
       } catch (error) {
         console.error('Failed to go live:', error);
+        // Fallback to simulated live mode
+        alert('Live streaming failed, but you can still use the DJ console in simulated mode.');
+        setIsLive(true);
+        setOnAirTime(0);
       }
     }
   };
@@ -271,13 +293,32 @@ export default function RadioClient() {
         const room = new Room();
         roomRef.current = room;
 
-        const token = await fetch('/api/livekit-token', {
+        // Check if LiveKit is configured
+        if (!process.env.NEXT_PUBLIC_LIVEKIT_URL) {
+          alert('LiveKit is not configured. Video streaming will be simulated.');
+          setIsVideoLive(true);
+          setIsLive(true);
+          setOnAirTime(0);
+          return;
+        }
+
+        const tokenResponse = await fetch('/api/livekit-token', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ room: 'chill-tune-radio', participant: 'dj' })
-        }).then(res => res.json());
+        });
 
-        await room.connect(process.env.NEXT_PUBLIC_LIVEKIT_URL!, token.token);
+        if (!tokenResponse.ok) {
+          throw new Error('Failed to get LiveKit token');
+        }
+
+        const tokenData = await tokenResponse.json();
+        
+        if (!tokenData.token) {
+          throw new Error('Invalid token response');
+        }
+
+        await room.connect(process.env.NEXT_PUBLIC_LIVEKIT_URL, tokenData.token);
         
         const localParticipant = room.localParticipant;
         if (localParticipant) {
@@ -294,6 +335,11 @@ export default function RadioClient() {
         setOnAirTime(0);
       } catch (error) {
         console.error('Failed to go live:', error);
+        // Fallback to simulated live mode
+        alert('Live streaming failed, but you can still use the DJ console in simulated mode.');
+        setIsVideoLive(true);
+        setIsLive(true);
+        setOnAirTime(0);
       }
     }
   };
