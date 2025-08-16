@@ -873,16 +873,15 @@ export default function RadioClient() {
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-800 relative overflow-hidden">
       {/* Rainy Night Background */}
       <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-blue-900 to-slate-800">
-        {/* Rain drops */}
-        <div className="absolute inset-0 opacity-30">
-          {[...Array(50)].map((_, i) => (
+        {/* Rain drops - static positioning */}
+        <div className="absolute inset-0 opacity-20">
+          {[...Array(100)].map((_, i) => (
             <div
               key={i}
-              className="absolute w-0.5 h-8 bg-blue-300 animate-pulse"
+              className="absolute w-0.5 h-6 bg-blue-300"
               style={{
                 left: `${Math.random() * 100}%`,
-                animationDelay: `${Math.random() * 2}s`,
-                animationDuration: `${1 + Math.random()}s`
+                top: `${Math.random() * 100}%`
               }}
             />
           ))}
@@ -899,20 +898,20 @@ export default function RadioClient() {
 
       {/* Main Content */}
       <div className="relative z-10 container mx-auto px-4 py-8">
-        <div className="bg-white rounded-lg p-6 shadow-lg">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Now Playing</h2>
+        <div className="bg-slate-800/80 backdrop-blur-sm rounded-lg p-6 shadow-lg border border-slate-600">
+          <h2 className="text-2xl font-bold text-white mb-4">Now Playing</h2>
           <div className="flex items-center space-x-4">
             <button
               onClick={handlePlayPause}
-              className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg font-semibold transition-colors"
+              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold transition-colors"
             >
               {isPlaying ? 'Pause' : 'Play'}
             </button>
             <div className="flex-1">
-              <div className="text-lg font-semibold text-gray-900">
+              <div className="text-lg font-semibold text-white">
                 {STREAMS[currentStreamIndex].name}
               </div>
-              <div className="text-sm text-gray-600">Live Stream</div>
+              <div className="text-slate-300">Live Stream</div>
             </div>
             <div className="flex items-center space-x-2">
               <input
@@ -924,7 +923,7 @@ export default function RadioClient() {
                 onChange={handleVolumeChange}
                 className="w-24"
               />
-              <span className="text-sm text-gray-600">{Math.round(volume * 100)}%</span>
+              <span className="text-sm text-slate-300">{Math.round(volume * 100)}%</span>
             </div>
           </div>
           <audio
@@ -936,8 +935,8 @@ export default function RadioClient() {
           />
         </div>
 
-        <div className="bg-white rounded-lg p-6 shadow-lg">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Live Chat</h2>
+        <div className="bg-slate-800/80 backdrop-blur-sm rounded-lg p-6 shadow-lg border border-slate-600">
+          <h2 className="text-2xl font-bold text-white mb-4">Live Chat</h2>
           
           {!isSignedIn ? (
             <div className="mb-4">
@@ -946,7 +945,7 @@ export default function RadioClient() {
                 placeholder="Enter username"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                className="border border-gray-300 rounded-lg px-3 py-2 mr-2"
+                className="border border-slate-600 bg-slate-700 text-white rounded-lg px-3 py-2 mr-2 placeholder-slate-400"
               />
               <button
                 onClick={() => setIsSignedIn(true)}
@@ -957,26 +956,26 @@ export default function RadioClient() {
             </div>
           ) : (
             <div className="mb-4">
-              <span className="text-sm text-gray-600">Signed in as: {username}</span>
+              <span className="text-sm text-slate-300">Signed in as: {username}</span>
               <button
                 onClick={() => setIsSignedIn(false)}
-                className="ml-2 text-blue-600 hover:text-blue-800"
+                className="ml-2 text-blue-400 hover:text-blue-300"
               >
                 Sign Out
               </button>
             </div>
           )}
-
-          <div className="h-64 overflow-y-auto border border-gray-200 rounded-lg p-3 mb-4 bg-gray-50">
+          
+          <div className="h-64 overflow-y-auto border border-slate-600 rounded-lg p-3 mb-4 bg-slate-700">
             {messages.map((msg) => (
               <div key={msg.id} className="mb-2">
-                <span className="font-semibold text-blue-600">{msg.username}:</span>
-                <span className="ml-2 text-gray-800">{msg.message}</span>
-                <span className="ml-2 text-xs text-gray-500">{msg.timestamp}</span>
+                <span className="font-semibold text-blue-400">{msg.username}:</span>
+                <span className="ml-2 text-slate-200">{msg.message}</span>
+                <span className="ml-2 text-xs text-slate-400">{msg.timestamp}</span>
               </div>
             ))}
           </div>
-
+          
           {isSignedIn && (
             <div className="flex space-x-2">
               <input
@@ -985,11 +984,11 @@ export default function RadioClient() {
                 value={newMessage}
                 onChange={(e) => setNewMessage(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
-                className="flex-1 border border-gray-300 rounded-lg px-3 py-2"
+                className="flex-1 border border-slate-600 bg-slate-700 text-white rounded-lg px-3 py-2 placeholder-slate-400"
               />
               <button
                 onClick={sendMessage}
-                className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg"
+                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg"
               >
                 Send
               </button>
@@ -1382,14 +1381,14 @@ export default function RadioClient() {
            )}
          </div>
 
-         <div className="bg-white rounded-lg p-6 shadow-lg">
-           <h2 className="text-2xl font-bold text-gray-900 mb-4">Radio Schedule</h2>
+         <div className="bg-slate-800/80 backdrop-blur-sm rounded-lg p-6 shadow-lg border border-slate-600">
+           <h2 className="text-2xl font-bold text-white mb-4">Radio Schedule</h2>
            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
              {schedule.map((slot, index) => (
-               <div key={index} className="border border-gray-200 rounded-lg p-4">
-                 <div className="font-semibold text-gray-900">{slot.day}</div>
-                 <div className="text-sm text-gray-600">{slot.time}</div>
-                 <div className="text-purple-600 font-medium">{slot.show}</div>
+               <div key={index} className="border border-slate-600 bg-slate-700 rounded-lg p-4">
+                 <div className="font-semibold text-white">{slot.day}</div>
+                 <div className="text-sm text-slate-300">{slot.time}</div>
+                 <div className="text-blue-400 font-medium">{slot.show}</div>
                </div>
              ))}
            </div>
