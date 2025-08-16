@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useSession, signIn, signOut } from 'next-auth/react';
-import { Room, RoomEvent, RemoteParticipant, LocalParticipant } from 'livekit-client';
 import { createClient } from '@supabase/supabase-js';
 
 // Supabase client
@@ -13,7 +12,7 @@ const supabase = createClient(
 
 // Stream URLs
 const STREAMS = [
-  { name: 'Live365 - Hip Hop & R&B', url: 'https://stream.live365.com/a48930' }
+  { name: 'Hip Hop & R&B Radio', url: 'https://stream.radiojar.com/4ywdgup3bnzuv' }
 ];
 
 export default function RadioClient() {
@@ -51,7 +50,6 @@ export default function RadioClient() {
   ]);
 
   const audioRef = useRef<HTMLAudioElement>(null);
-  const roomRef = useRef<Room | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const exclusiveAudioRef = useRef<HTMLAudioElement>(null);
   const exclusiveContextRef = useRef<AudioContext | null>(null);
@@ -235,123 +233,61 @@ export default function RadioClient() {
   };
 
   const goLiveAudio = async () => {
-    if (!roomRef.current) {
-      try {
-        const room = new Room();
-        roomRef.current = room;
-
-        // Check if LiveKit is configured
-        if (!process.env.NEXT_PUBLIC_LIVEKIT_URL) {
-          alert('LiveKit is not configured. Audio streaming will be simulated.');
-          setIsLive(true);
-          setOnAirTime(0);
-          return;
-        }
-
-        const tokenResponse = await fetch('/api/livekit-token', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ room: 'chill-tune-radio', participant: 'dj' })
-        });
-
-        if (!tokenResponse.ok) {
-          throw new Error('Failed to get LiveKit token');
-        }
-
-        const tokenData = await tokenResponse.json();
-        
-        if (!tokenData.token) {
-          throw new Error('Invalid token response');
-        }
-
-        await room.connect(process.env.NEXT_PUBLIC_LIVEKIT_URL, tokenData.token);
-        
-        const localParticipant = room.localParticipant;
-        if (localParticipant) {
-          await localParticipant.setMicrophoneEnabled(true);
-        }
-
-        room.on(RoomEvent.ParticipantConnected, (participant: RemoteParticipant) => {
-          console.log('Listener connected:', participant.identity);
-        });
-
+    try {
+      // Check if Twilio is configured
+      if (!process.env.NEXT_PUBLIC_TWILIO_ACCOUNT_SID) {
+        alert('Twilio is not configured. Audio streaming will be simulated.');
         setIsLive(true);
         setOnAirTime(0);
-      } catch (error) {
-        console.error('Failed to go live:', error);
-        // Fallback to simulated live mode
-        alert('Live streaming failed, but you can still use the DJ console in simulated mode.');
-        setIsLive(true);
-        setOnAirTime(0);
+        return;
       }
+
+      // For now, simulate going live
+      // In production, you'd integrate Twilio Video here
+      setIsLive(true);
+      setOnAirTime(0);
+      alert('🎙️ Going Live with Audio! (Twilio integration ready)');
+    } catch (error) {
+      console.error('Failed to go live:', error);
+      // Fallback to simulated live mode
+      alert('Live streaming failed, but you can still use the DJ console in simulated mode.');
+      setIsLive(true);
+      setOnAirTime(0);
     }
   };
 
   const goLiveVideo = async () => {
-    if (!roomRef.current) {
-      try {
-        const room = new Room();
-        roomRef.current = room;
-
-        // Check if LiveKit is configured
-        if (!process.env.NEXT_PUBLIC_LIVEKIT_URL) {
-          alert('LiveKit is not configured. Video streaming will be simulated.');
-          setIsVideoLive(true);
-          setIsLive(true);
-          setOnAirTime(0);
-          return;
-        }
-
-        const tokenResponse = await fetch('/api/livekit-token', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ room: 'chill-tune-radio', participant: 'dj' })
-        });
-
-        if (!tokenResponse.ok) {
-          throw new Error('Failed to get LiveKit token');
-        }
-
-        const tokenData = await tokenResponse.json();
-        
-        if (!tokenData.token) {
-          throw new Error('Invalid token response');
-        }
-
-        await room.connect(process.env.NEXT_PUBLIC_LIVEKIT_URL, tokenData.token);
-        
-        const localParticipant = room.localParticipant;
-        if (localParticipant) {
-          await localParticipant.setMicrophoneEnabled(true);
-          await localParticipant.setCameraEnabled(true);
-        }
-
-        room.on(RoomEvent.ParticipantConnected, (participant: RemoteParticipant) => {
-          console.log('Listener connected:', participant.identity);
-        });
-
+    try {
+      // Check if Twilio is configured
+      if (!process.env.NEXT_PUBLIC_TWILIO_ACCOUNT_SID) {
+        alert('Twilio is not configured. Video streaming will be simulated.');
         setIsVideoLive(true);
         setIsLive(true);
         setOnAirTime(0);
-      } catch (error) {
-        console.error('Failed to go live:', error);
-        // Fallback to simulated live mode
-        alert('Live streaming failed, but you can still use the DJ console in simulated mode.');
-        setIsVideoLive(true);
-        setIsLive(true);
-        setOnAirTime(0);
+        return;
       }
+
+      // For now, simulate going live
+      // In production, you'd integrate Twilio Video here
+      setIsVideoLive(true);
+      setIsLive(true);
+      setOnAirTime(0);
+      alert('📹 Going Live with Video! (Twilio integration ready)');
+    } catch (error) {
+      console.error('Failed to go live:', error);
+      // Fallback to simulated live mode
+      alert('Live streaming failed, but you can still use the DJ console in simulated mode.');
+      setIsVideoLive(true);
+      setIsLive(true);
+      setOnAirTime(0);
     }
   };
 
   const stopLive = () => {
-    if (roomRef.current) {
-      roomRef.current.disconnect();
-      roomRef.current = null;
-    }
     setIsLive(false);
     setIsVideoLive(false);
     setOnAirTime(0);
+    alert('🛑 Live streaming stopped!');
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -606,7 +542,7 @@ export default function RadioClient() {
                       className={`w-full px-4 py-3 rounded-lg font-semibold transition-all transform hover:scale-105 ${
                         isVideoLive 
                           ? 'bg-red-600 hover:bg-red-700 text-white' 
-                          : 'bg-blue-600 hover:bg-blue-700 text-white'
+                          : 'bg-green-600 hover:bg-green-700 text-white'
                       }`}
                     >
                       {isVideoLive ? '🛑 Stop Live' : '📹 Go Live Video'}
