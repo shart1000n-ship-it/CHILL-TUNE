@@ -79,25 +79,30 @@ export default function RadioClient() {
     if (audioRef.current) {
       audioRef.current.volume = volume;
     }
-    
-    // Apply crossfader effect
-    if (exclusiveGainNodeRef.current && streamGainNodeRef.current) {
-      // Crossfader: 0 = full stream, 1 = full exclusive
-      streamGainNodeRef.current.gain.value = (1 - crossfader) * streamVolume;
-      exclusiveGainNodeRef.current.gain.value = crossfader * exclusiveVolume;
-    }
-  }, [volume, crossfader, streamVolume, exclusiveVolume]);
+  }, [volume]);
 
-  // Crossfader effect on exclusive tracks
+  // Crossfader effect on exclusive tracks - Fixed functionality
   useEffect(() => {
-    if (exclusiveGainNodeRef.current && streamGainNodeRef.current) {
-      streamGainNodeRef.current.gain.value = (1 - crossfader) * streamVolume;
-      exclusiveGainNodeRef.current.gain.value = crossfader * exclusiveVolume;
+    // Update exclusive track volume if it's currently playing
+    if (exclusiveGainNodeRef.current && isExclusivePlaying) {
+      const newGainValue = crossfader * exclusiveVolume;
+      exclusiveGainNodeRef.current.gain.value = newGainValue;
+      console.log('Crossfader updated:', {
+        crossfader: crossfader,
+        exclusiveVolume: exclusiveVolume,
+        newGainValue: newGainValue
+      });
     }
     
-    // Also update exclusive track volume if it's currently playing
-    if (exclusiveGainNodeRef.current && isExclusivePlaying) {
-      exclusiveGainNodeRef.current.gain.value = crossfader * exclusiveVolume;
+    // Update stream volume if we have stream gain node
+    if (streamGainNodeRef.current) {
+      const newStreamGainValue = (1 - crossfader) * streamVolume;
+      streamGainNodeRef.current.gain.value = newStreamGainValue;
+      console.log('Stream gain updated:', {
+        crossfader: crossfader,
+        streamVolume: streamVolume,
+        newStreamGainValue: newStreamGainValue
+      });
     }
   }, [crossfader, streamVolume, exclusiveVolume, isExclusivePlaying]);
 
@@ -462,26 +467,36 @@ export default function RadioClient() {
       const gainNode = exclusiveContextRef.current.createGain();
       exclusiveGainNodeRef.current = gainNode;
       
-      // Apply crossfader effect
+      // Set initial volume based on crossfader
       gainNode.gain.value = crossfader * exclusiveVolume;
       
       const source = exclusiveContextRef.current.createBufferSource();
       source.buffer = audioBuffer;
       
-      // Connect: source -> gain -> destination
+      // Simple connection: source -> gain -> destination
       source.connect(gainNode);
       gainNode.connect(exclusiveContextRef.current.destination);
       
-      source.start();
+      // Start playback
+      source.start(0);
+      
+      console.log('Exclusive track started:', {
+        duration: audioBuffer.duration,
+        crossfader: crossfader,
+        exclusiveVolume: exclusiveVolume,
+        gainValue: gainNode.gain.value
+      });
 
       source.onended = () => {
         setIsExclusivePlaying(false);
         setExclusiveElapsed(0);
         setExclusiveStartTime(0);
+        console.log('Exclusive track ended');
       };
 
     } catch (error) {
       console.error('Failed to play exclusive file:', error);
+      alert('Failed to play exclusive file. Please try again.');
     }
   };
 
@@ -525,6 +540,38 @@ export default function RadioClient() {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const testAudio = () => {
+    try {
+      if (!exclusiveContextRef.current) {
+        exclusiveContextRef.current = new AudioContext();
+      }
+
+      if (exclusiveContextRef.current.state === 'suspended') {
+        exclusiveContextRef.current.resume();
+      }
+
+      // Create a simple test tone
+      const oscillator = exclusiveContextRef.current.createOscillator();
+      const gainNode = exclusiveContextRef.current.createGain();
+      
+      oscillator.frequency.setValueAtTime(440, exclusiveContextRef.current.currentTime); // A4 note
+      gainNode.gain.setValueAtTime(0.1, exclusiveContextRef.current.currentTime);
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(exclusiveContextRef.current.destination);
+      
+      oscillator.start();
+      oscillator.stop(exclusiveContextRef.current.currentTime + 1);
+      
+      console.log('Test audio played successfully');
+      alert('Test audio played! Check console for details.');
+      
+    } catch (error) {
+      console.error('Test audio failed:', error);
+      alert('Test audio failed: ' + (error as Error).message);
+    }
   };
 
   return (
@@ -734,6 +781,24 @@ export default function RadioClient() {
                           className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
                         />
                       </div>
+                    </div>
+                    
+                    {/* Debug Info */}
+                    <div className="bg-gray-800 rounded-lg p-3 mt-4">
+                      <div className="text-xs text-gray-300 space-y-1">
+                        <div>Debug Info:</div>
+                        <div>Crossfader: {crossfader.toFixed(2)}</div>
+                        <div>Exclusive Volume: {exclusiveVolume.toFixed(2)}</div>
+                        <div>Stream Volume: {streamVolume.toFixed(2)}</div>
+                        <div>Exclusive Playing: {isExclusivePlaying ? 'Yes' : 'No'}</div>
+                        <div>Gain Node: {exclusiveGainNodeRef.current ? 'Active' : 'None'}</div>
+                      </div>
+                      <button
+                        onClick={testAudio}
+                        className="mt-2 w-full bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-2 rounded text-xs font-semibold"
+                      >
+                        🧪 Test Audio
+                      </button>
                     </div>
                   </div>
                 </div>
