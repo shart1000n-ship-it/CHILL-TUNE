@@ -1421,6 +1421,56 @@ export default function RadioClient() {
            )}
          </div>
 
+         {/* Donation Section */}
+         <div className="bg-gradient-to-r from-green-900/80 to-emerald-800/80 backdrop-blur-sm rounded-lg p-6 shadow-lg border border-green-600 mb-6">
+           <div className="text-center mb-6">
+             <h2 className="text-3xl font-bold text-white mb-2">💚 Support Chill & Tune Radio</h2>
+             <p className="text-slate-200 text-lg">Help keep the Hip-Hop & R&B vibes flowing 24/7</p>
+           </div>
+           
+           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+             <div className="bg-green-800/60 rounded-lg p-4 text-center border border-green-500">
+               <div className="text-2xl mb-2">🎧</div>
+               <div className="text-white font-semibold">Basic Supporter</div>
+               <div className="text-green-200 text-sm">$5/month</div>
+             </div>
+             <div className="bg-emerald-800/60 rounded-lg p-4 text-center border border-emerald-500">
+               <div className="text-2xl mb-2">🎵</div>
+               <div className="text-white font-semibold">Music Lover</div>
+               <div className="text-emerald-200 text-sm">$10/month</div>
+             </div>
+             <div className="bg-green-700/60 rounded-lg p-4 text-center border border-green-400">
+               <div className="text-2xl mb-2">🌟</div>
+               <div className="text-white font-semibold">VIP Supporter</div>
+               <div className="text-green-100 text-sm">$25/month</div>
+             </div>
+           </div>
+           
+           <div className="text-center space-y-4">
+             <div className="bg-white/10 rounded-lg p-4">
+               <p className="text-white text-sm mb-3">Choose your donation method:</p>
+               <div className="flex flex-wrap justify-center gap-3">
+                 <button className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold transition-colors">
+                   💳 PayPal
+                 </button>
+                 <button className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-semibold transition-colors">
+                   🍃 Cash App
+                 </button>
+                 <button className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg font-semibold transition-colors">
+                   🚀 Venmo
+                 </button>
+               </div>
+             </div>
+             
+             <div className="text-center">
+               <p className="text-slate-200 text-sm">Or send a one-time donation:</p>
+               <button className="bg-yellow-600 hover:bg-yellow-700 text-white px-8 py-3 rounded-lg font-semibold text-lg transition-colors mt-2">
+                 💰 Donate Now
+               </button>
+             </div>
+           </div>
+         </div>
+
          <div className="bg-slate-800/80 backdrop-blur-sm rounded-lg p-6 shadow-lg border border-slate-600">
            <div className="text-center mb-6">
              <h2 className="text-2xl font-bold text-white mb-2">Radio Schedule</h2>
