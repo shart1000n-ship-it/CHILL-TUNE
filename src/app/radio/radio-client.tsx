@@ -83,6 +83,63 @@ export default function RadioClient() {
     session.user.email === 'chillandtune.fm'
   );
 
+  // Initialize audio system when component mounts
+  useEffect(() => {
+    // Create audio context immediately
+    const initAudio = async () => {
+      try {
+        const newAudioContext = new AudioContext();
+        setAudioContext(newAudioContext);
+        
+        // Create gain nodes for immediate control
+        const micGain = newAudioContext.createGain();
+        const streamGain = newAudioContext.createGain();
+        const exclusiveGain = newAudioContext.createGain();
+        
+        // Create EQ nodes
+        const lowFilter = newAudioContext.createBiquadFilter();
+        const midFilter = newAudioContext.createBiquadFilter();
+        const highFilter = newAudioContext.createBiquadFilter();
+        
+        // Configure EQ filters
+        lowFilter.type = 'lowshelf';
+        lowFilter.frequency.setValueAtTime(200, newAudioContext.currentTime);
+        
+        midFilter.type = 'peaking';
+        midFilter.frequency.setValueAtTime(1000, newAudioContext.currentTime);
+        midFilter.Q.setValueAtTime(1, newAudioContext.currentTime);
+        
+        highFilter.type = 'highshelf';
+        highFilter.frequency.setValueAtTime(3000, newAudioContext.currentTime);
+        
+        // Set initial values
+        micGain.gain.value = micVolume;
+        streamGain.gain.value = (1 - crossfader) * streamVolume;
+        exclusiveGain.gain.value = crossfader * exclusiveVolume;
+        
+        // Apply EQ values
+        lowFilter.gain.setValueAtTime((eqLow - 0.5) * 20, newAudioContext.currentTime);
+        midFilter.gain.setValueAtTime((eqMid - 0.5) * 20, newAudioContext.currentTime);
+        highFilter.gain.setValueAtTime((eqHigh - 0.5) * 20, newAudioContext.currentTime);
+        
+        // Store nodes in state
+        setMicGainNode(micGain);
+        setStreamGainNode(streamGain);
+        setExclusiveGainNode(exclusiveGain);
+        setEqLowNode(lowFilter);
+        setEqMidNode(midFilter);
+        setEqHighNode(highFilter);
+        
+        console.log('Audio system initialized successfully');
+        
+      } catch (error) {
+        console.error('Failed to initialize audio:', error);
+      }
+    };
+    
+    initAudio();
+  }, []); // Run once on mount
+
   // Initialize audio player and crossfader
   useEffect(() => {
     if (audioRef.current) {
@@ -278,11 +335,75 @@ export default function RadioClient() {
   };
 
   const handleMicVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setMicVolume(parseFloat(e.target.value));
+    const newVolume = parseFloat(e.target.value);
+    setMicVolume(newVolume);
+    
+    // Apply to audio node immediately
+    if (micGainNode && audioContext) {
+      micGainNode.gain.setValueAtTime(newVolume, audioContext.currentTime);
+      console.log('Mic volume changed to:', newVolume);
+    }
   };
 
   const handleCrossfaderChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setCrossfader(parseFloat(e.target.value));
+    const newCrossfader = parseFloat(e.target.value);
+    setCrossfader(newCrossfader);
+    
+    // Apply crossfader effect immediately
+    if (streamGainNode && exclusiveGainNode && audioContext) {
+      streamGainNode.gain.setValueAtTime((1 - newCrossfader) * streamVolume, audioContext.currentTime);
+      exclusiveGainNode.gain.setValueAtTime(newCrossfader * exclusiveVolume, audioContext.currentTime);
+      console.log('Crossfader changed to:', newCrossfader);
+    }
+  };
+
+  const handleStreamVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newVolume = parseFloat(e.target.value);
+    setStreamVolume(newVolume);
+    
+    // Apply to stream gain node immediately
+    if (streamGainNode && audioContext) {
+      streamGainNode.gain.setValueAtTime((1 - crossfader) * newVolume, audioContext.currentTime);
+      console.log('Stream volume changed to:', newVolume);
+    }
+  };
+
+  const handleExclusiveVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newVolume = parseFloat(e.target.value);
+    setExclusiveVolume(newVolume);
+    
+    // Apply to exclusive gain node immediately
+    if (exclusiveGainNode && audioContext) {
+      exclusiveGainNode.gain.setValueAtTime(crossfader * newVolume, audioContext.currentTime);
+      console.log('Exclusive volume changed to:', newVolume);
+    }
+  };
+
+  const handleEQChange = (type: 'low' | 'mid' | 'high', value: number) => {
+    if (!audioContext) return;
+    
+    switch (type) {
+      case 'low':
+        setEqLow(value);
+        if (eqLowNode) {
+          eqLowNode.gain.setValueAtTime((value - 0.5) * 20, audioContext.currentTime);
+        }
+        break;
+      case 'mid':
+        setEqMid(value);
+        if (eqMidNode) {
+          eqMidNode.gain.setValueAtTime((value - 0.5) * 20, audioContext.currentTime);
+        }
+        break;
+      case 'high':
+        setEqHigh(value);
+        if (eqHighNode) {
+          eqHighNode.gain.setValueAtTime((value - 0.5) * 20, audioContext.currentTime);
+        }
+        break;
+    }
+    
+    console.log(`${type} EQ changed to:`, value);
   };
 
   const enableMIDI = async () => {
@@ -637,6 +758,61 @@ export default function RadioClient() {
     }
   };
 
+  const testAudioChain = () => {
+    try {
+      if (!audioContext) {
+        alert('Audio system not initialized. Please wait a moment and try again.');
+        return;
+      }
+
+      // Create a test tone that goes through the entire audio chain
+      const oscillator = audioContext.createOscillator();
+      const testGain = audioContext.createGain();
+      
+      oscillator.frequency.setValueAtTime(440, audioContext.currentTime); // A4 note
+      testGain.gain.setValueAtTime(0.1, audioContext.currentTime);
+      
+      // Connect through the audio processing chain
+      oscillator.connect(testGain);
+      
+      if (micGainNode) {
+        testGain.connect(micGainNode);
+        console.log('✅ Mic gain node connected');
+      }
+      
+      if (eqLowNode && eqMidNode && eqHighNode) {
+        if (micGainNode) {
+          micGainNode.connect(eqLowNode);
+          eqLowNode.connect(eqMidNode);
+          eqMidNode.connect(eqHighNode);
+          console.log('✅ EQ chain connected');
+        }
+      }
+      
+      if (streamGainNode && exclusiveGainNode) {
+        if (eqHighNode) {
+          eqHighNode.connect(streamGainNode);
+          eqHighNode.connect(exclusiveGainNode);
+          console.log('✅ Crossfader nodes connected');
+        }
+      }
+      
+      // Connect to destination
+      if (streamGainNode) streamGainNode.connect(audioContext.destination);
+      if (exclusiveGainNode) exclusiveGainNode.connect(audioContext.destination);
+      
+      oscillator.start();
+      oscillator.stop(audioContext.currentTime + 2);
+      
+      console.log('🎵 Test audio chain playing through all controls!');
+      alert('🎵 Test audio playing through mic volume, EQ, and crossfader! Check console for details.');
+      
+    } catch (error) {
+      console.error('Test audio chain failed:', error);
+      alert('Test failed: ' + (error as Error).message);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="bg-white rounded-lg p-6 shadow-lg">
@@ -804,7 +980,7 @@ export default function RadioClient() {
                           max="1"
                           step="0.01"
                           value={crossfader}
-                          onChange={(e) => setCrossfader(parseFloat(e.target.value))}
+                          onChange={handleCrossfaderChange}
                           className="flex-1 h-3 bg-gray-700 rounded-lg appearance-none cursor-pointer slider"
                         />
                         <span className="text-sm text-purple-200 font-semibold">🎵 Exclusive</span>
@@ -826,7 +1002,7 @@ export default function RadioClient() {
                           max="1"
                           step="0.01"
                           value={streamVolume}
-                          onChange={(e) => setStreamVolume(parseFloat(e.target.value))}
+                          onChange={handleStreamVolumeChange}
                           className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
                         />
                       </div>
@@ -840,7 +1016,7 @@ export default function RadioClient() {
                           max="1"
                           step="0.01"
                           value={exclusiveVolume}
-                          onChange={(e) => setExclusiveVolume(parseFloat(e.target.value))}
+                          onChange={handleExclusiveVolumeChange}
                           className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
                         />
                       </div>
@@ -868,6 +1044,12 @@ export default function RadioClient() {
                         className="mt-2 w-full bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-2 rounded text-xs font-semibold"
                       >
                         🧪 Test Audio
+                      </button>
+                      <button
+                        onClick={testAudioChain}
+                        className="mt-2 w-full bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded text-xs font-semibold"
+                      >
+                        🎵 Test Audio Chain
                       </button>
                     </div>
                   </div>
@@ -1041,7 +1223,7 @@ export default function RadioClient() {
                                 max="1"
                                 step="0.01"
                                 value={eqLow}
-                                onChange={(e) => setEqLow(parseFloat(e.target.value))}
+                                onChange={(e) => handleEQChange('low', parseFloat(e.target.value))}
                                 className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
                               />
                             </div>
@@ -1053,7 +1235,7 @@ export default function RadioClient() {
                                 max="1"
                                 step="0.01"
                                 value={eqMid}
-                                onChange={(e) => setEqMid(parseFloat(e.target.value))}
+                                onChange={(e) => handleEQChange('mid', parseFloat(e.target.value))}
                                 className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
                               />
                             </div>
@@ -1065,7 +1247,7 @@ export default function RadioClient() {
                                 max="1"
                                 step="0.01"
                                 value={eqHigh}
-                                onChange={(e) => setEqHigh(parseFloat(e.target.value))}
+                                onChange={(e) => handleEQChange('high', parseFloat(e.target.value))}
                                 className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
                               />
                             </div>
