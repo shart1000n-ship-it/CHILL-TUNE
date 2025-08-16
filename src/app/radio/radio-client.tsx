@@ -11,7 +11,7 @@ const supabase = createClient(
 );
 
 export default function RadioClient() {
-  // Music streams - All Hip Hop & R&B (using one reliable stream)
+  // Music streams - All Hip Hop & R&B (using Hot 108 JAMZ)
   const STREAMS = [
     { name: "PowerHitz (Pure R&B)", url: "https://ice1.somafm.com/defcon-128-mp3", genre: "R&B" },
     { name: "Hip Hop Nation", url: "https://ice1.somafm.com/defcon-128-mp3", genre: "Hip-Hop" },
