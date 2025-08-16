@@ -13,10 +13,10 @@ const supabase = createClient(
 export default function RadioClient() {
   // Music streams - All Hip Hop & R&B
   const STREAMS = [
-    { name: "PowerHitz (Pure R&B)", url: "https://stream.radiojar.com/4ywdgup3bnzuv" },
-    { name: "Hip Hop Nation", url: "https://stream.radiojar.com/4ywdgup3bnzuv" },
-    { name: "R&B Vibes", url: "https://stream.radiojar.com/4ywdgup3bnzuv" },
-    { name: "Hip Hop Classics", url: "https://stream.radiojar.com/4ywdgup3bnzuv" }
+    { name: "PowerHitz (Pure R&B)", url: "https://stream.radiojar.com/4ywdgup3bnzuv", genre: "R&B" },
+    { name: "Hip Hop Nation", url: "https://stream.radiojar.com/4ywdgup3bnzuv", genre: "Hip-Hop" },
+    { name: "R&B Vibes", url: "https://stream.radiojar.com/4ywdgup3bnzuv", genre: "R&B" },
+    { name: "Hip Hop Classics", url: "https://stream.radiojar.com/4ywdgup3bnzuv", genre: "Hip-Hop" }
   ];
 
   // MIDI Controller Support
@@ -69,15 +69,15 @@ export default function RadioClient() {
                   (process.env.NEXT_PUBLIC_ADMIN_EMAILS && 
                    process.env.NEXT_PUBLIC_ADMIN_EMAILS.includes(session?.user?.email || ''));
 
-  // Radio schedule
+  // Radio schedule - Hip-Hop & R&B Focused
   const schedule = [
-    { day: 'Monday', time: '6:00 PM - 10:00 PM', show: 'Hip Hop Classics' },
-    { day: 'Tuesday', time: '6:00 PM - 10:00 PM', show: 'R&B Vibes' },
-    { day: 'Wednesday', time: '6:00 PM - 10:00 PM', show: 'Hip Hop Nation' },
-    { day: 'Thursday', time: '6:00 PM - 10:00 PM', show: 'PowerHitz Pure R&B' },
-    { day: 'Friday', time: '6:00 PM - 12:00 AM', show: 'Weekend Mix' },
-    { day: 'Saturday', time: '2:00 PM - 12:00 AM', show: 'Saturday Sessions' },
-    { day: 'Sunday', time: '2:00 PM - 10:00 PM', show: 'Sunday Chill' }
+    { day: 'Monday', time: '6:00 PM - 10:00 PM', show: 'Hip Hop Classics', genre: 'Hip-Hop' },
+    { day: 'Tuesday', time: '6:00 PM - 10:00 PM', show: 'R&B Vibes', genre: 'R&B' },
+    { day: 'Wednesday', time: '6:00 PM - 10:00 PM', show: 'Hip Hop Nation', genre: 'Hip-Hop' },
+    { day: 'Thursday', time: '6:00 PM - 10:00 PM', show: 'PowerHitz Pure R&B', genre: 'R&B' },
+    { day: 'Friday', time: '6:00 PM - 12:00 AM', show: 'Weekend Mix', genre: 'Mixed' },
+    { day: 'Saturday', time: '2:00 PM - 12:00 AM', show: 'Saturday Sessions', genre: 'Mixed' },
+    { day: 'Sunday', time: '2:00 PM - 10:00 PM', show: 'Sunday Chill', genre: 'R&B' }
   ];
 
   // Initialize audio system when component mounts
@@ -870,36 +870,19 @@ export default function RadioClient() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-800 relative overflow-hidden">
-      {/* Rainy Night Background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-blue-900 to-slate-800">
-        {/* Rain drops - static positioning */}
-        <div className="absolute inset-0 opacity-20">
-          {[...Array(100)].map((_, i) => (
-            <div
-              key={i}
-              className="absolute w-0.5 h-6 bg-blue-300"
-              style={{
-                left: `${Math.random() * 100}%`,
-                top: `${Math.random() * 100}%`
-              }}
-            />
-          ))}
-        </div>
-        
-        {/* Window frame effect */}
-        <div className="absolute inset-4 border-2 border-slate-600 rounded-lg opacity-20" />
-        <div className="absolute inset-6 border border-slate-500 rounded opacity-10" />
-        
-        {/* Moon/light source */}
-        <div className="absolute top-8 right-8 w-16 h-16 bg-yellow-200 rounded-full opacity-20 blur-sm" />
-        <div className="absolute top-10 right-10 w-12 h-12 bg-yellow-100 rounded-full opacity-30 blur-sm" />
-      </div>
+    <div className="min-h-screen relative overflow-hidden">
+      {/* Background removed - now handled by parent page component */}
 
       {/* Main Content */}
       <div className="relative z-10 container mx-auto px-4 py-8">
         <div className="bg-slate-800/80 backdrop-blur-sm rounded-lg p-6 shadow-lg border border-slate-600">
-          <h2 className="text-2xl font-bold text-white mb-4">Now Playing</h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-2xl font-bold text-white">Now Playing</h2>
+            <div className="flex items-center space-x-2">
+              <span className="bg-red-600 text-white px-3 py-1 rounded-full text-sm font-semibold">Hip-Hop</span>
+              <span className="bg-blue-600 text-white px-3 py-1 rounded-full text-sm font-semibold">R&B</span>
+            </div>
+          </div>
           <div className="flex items-center space-x-4">
             <button
               onClick={handlePlayPause}
@@ -911,7 +894,9 @@ export default function RadioClient() {
               <div className="text-lg font-semibold text-white">
                 {STREAMS[currentStreamIndex].name}
               </div>
-              <div className="text-slate-300">Live Stream</div>
+              <div className="text-slate-300">
+                <span className="text-blue-400 font-medium">{STREAMS[currentStreamIndex].genre}</span> • Live Stream
+              </div>
             </div>
             <div className="flex items-center space-x-2">
               <input
@@ -1010,7 +995,7 @@ export default function RadioClient() {
             <div className="text-center py-8">
               <button
                 onClick={() => signIn()}
-                className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white px-8 py-4 rounded-lg font-semibold text-lg transition-all transform hover:scale-105"
+                className="bg-gradient-to-r from-blue-600 to-slate-600 hover:from-blue-700 hover:to-slate-700 text-white px-8 py-4 rounded-lg font-semibold text-lg transition-all transform hover:scale-105"
               >
                 🔐 Sign In to Access DJ Console
               </button>
@@ -1115,11 +1100,11 @@ export default function RadioClient() {
                              onChange={handleCrossfaderChange}
                              className="flex-1 h-3 bg-gray-700 rounded-lg appearance-none cursor-pointer"
                            />
-                           <span className="text-sm text-purple-200 font-semibold">🎵 Exclusive</span>
+                           <span className="text-sm text-blue-200 font-semibold">🎵 Exclusive</span>
                          </div>
                          <div className="flex justify-between text-sm text-gray-300 mt-2">
                            <span className="bg-blue-600 px-2 py-1 rounded">Stream: {Math.round((1 - crossfader) * 100)}%</span>
-                           <span className="bg-purple-600 px-2 py-1 rounded">Exclusive: {Math.round(crossfader * 100)}%</span>
+                           <span className="bg-blue-600 px-2 py-1 rounded">Exclusive: {Math.round(crossfader * 100)}%</span>
                          </div>
                          <div className="text-center text-xs text-gray-400 mt-2">
                            {streamGainNode && exclusiveGainNode ? '✅ Crossfader Active' : '⏳ Connecting...'}
@@ -1245,7 +1230,7 @@ export default function RadioClient() {
                          type="file"
                          accept="audio/*"
                          onChange={handleFileSelect}
-                         className="block w-full text-sm text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-purple-600 file:text-white hover:file:bg-purple-700"
+                         className="block w-full text-sm text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700"
                        />
                        {exclusiveFile && (
                          <div className="bg-gray-700 rounded-lg p-3">
@@ -1255,12 +1240,12 @@ export default function RadioClient() {
                                <div className="text-sm text-gray-300">
                                  Duration: <span className="text-white">{formatTime(exclusiveElapsed)}</span> / <span className="text-white">{formatTime(exclusiveDuration)}</span>
                                </div>
-                               <div className="w-full bg-gray-600 rounded-full h-2">
-                                 <div 
-                                   className="bg-purple-500 h-2 rounded-full transition-all duration-100"
-                                   style={{ width: `${(exclusiveElapsed / exclusiveDuration) * 100}%` }}
-                                 ></div>
-                               </div>
+                                                                <div className="w-full bg-gray-600 rounded-full h-2">
+                                   <div 
+                                     className="bg-blue-500 h-2 rounded-full transition-all duration-100"
+                                     style={{ width: `${(exclusiveElapsed / exclusiveDuration) * 100}%` }}
+                                   ></div>
+                                 </div>
                                <div className="text-xs text-gray-400 text-center">
                                  {Math.round((exclusiveElapsed / exclusiveDuration) * 100)}% Complete
                                </div>
@@ -1271,7 +1256,7 @@ export default function RadioClient() {
                        <button
                          onClick={startExclusiveFromFile}
                          disabled={!exclusiveFile}
-                         className="w-full bg-purple-600 hover:bg-purple-700 disabled:bg-gray-600 text-white px-6 py-3 rounded-lg font-semibold transition-all transform hover:scale-105 disabled:transform-none"
+                         className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white px-6 py-3 rounded-lg font-semibold transition-all transform hover:scale-105 disabled:transform-none"
                        >
                          {isExclusivePlaying ? '⏸️ Stop' : '▶️ Play Exclusive'}
                        </button>
@@ -1382,13 +1367,25 @@ export default function RadioClient() {
          </div>
 
          <div className="bg-slate-800/80 backdrop-blur-sm rounded-lg p-6 shadow-lg border border-slate-600">
-           <h2 className="text-2xl font-bold text-white mb-4">Radio Schedule</h2>
+           <div className="text-center mb-6">
+             <h2 className="text-2xl font-bold text-white mb-2">Radio Schedule</h2>
+             <p className="text-slate-300">Your weekly Hip-Hop & R&B programming guide</p>
+           </div>
            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
              {schedule.map((slot, index) => (
                <div key={index} className="border border-slate-600 bg-slate-700 rounded-lg p-4">
                  <div className="font-semibold text-white">{slot.day}</div>
                  <div className="text-sm text-slate-300">{slot.time}</div>
                  <div className="text-blue-400 font-medium">{slot.show}</div>
+                 <div className="mt-2">
+                   <span className={`inline-block px-2 py-1 rounded text-xs font-semibold ${
+                     slot.genre === 'Hip-Hop' ? 'bg-red-600 text-white' :
+                     slot.genre === 'R&B' ? 'bg-blue-600 text-white' :
+                     'bg-purple-600 text-white'
+                   }`}>
+                     {slot.genre}
+                   </span>
+                 </div>
                </div>
              ))}
            </div>
