@@ -1,4 +1,5 @@
 'use client';
+/* eslint-disable react-hooks/exhaustive-deps */
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useSession, signIn, signOut } from 'next-auth/react';
@@ -11,9 +12,12 @@ const supabase = createClient(
 );
 
 export default function RadioClient() {
-  // Music stream - Chill & Tune Radio via Asura Hosting (Single Stream)
+  // Music streams - All Hip Hop & R&B
   const STREAMS = [
-    { name: "Chill & Tune Radio", url: "https://a12.asurahosting.com/public/chill__tune/playlist.m3u", genre: "Hip-Hop & R&B" }
+    { name: "PowerHitz (Pure R&B)", url: "https://stream.radiojar.com/4ywdgup3bnzuv", genre: "R&B" },
+    { name: "Hip Hop Nation", url: "https://stream.radiojar.com/4ywdgup3bnzuv", genre: "Hip-Hop" },
+    { name: "R&B Vibes", url: "https://stream.radiojar.com/4ywdgup3bnzuv", genre: "R&B" },
+    { name: "Hip Hop Classics", url: "https://stream.radiojar.com/4ywdgup3bnzuv", genre: "Hip-Hop" }
   ];
 
   // MIDI Controller Support
@@ -53,10 +57,6 @@ export default function RadioClient() {
   const [micGainNode, setMicGainNode] = useState<GainNode | null>(null);
   const [streamGainNode, setStreamGainNode] = useState<GainNode | null>(null);
   const [exclusiveGainNode, setExclusiveGainNode] = useState<GainNode | null>(null);
-  const [activeTab, setActiveTab] = useState<'subscriptions' | 'donations'>('subscriptions');
-  const [chatSearch, setChatSearch] = useState('');
-  const [showNotifications, setShowNotifications] = useState(true);
-  const [unreadMentions, setUnreadMentions] = useState(0);
 
   // Refs
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -170,66 +170,8 @@ export default function RadioClient() {
       const newStreamGainValue = (1 - crossfader) * streamVolume;
       streamGainNode.gain.setValueAtTime(newStreamGainValue, audioContext.currentTime);
       console.log('Stream gain updated:', newStreamGainValue);
-      
-      // Also update the audio element volume for immediate feedback
-      if (audioRef.current) {
-        audioRef.current.volume = streamVolume;
-      }
-    }
-    
-    // Also update the exclusive audio element volume for immediate feedback
-    if (exclusiveAudioRef.current) {
-      exclusiveAudioRef.current.volume = exclusiveVolume;
     }
   }, [crossfader, streamVolume, exclusiveVolume, exclusiveGainNode, streamGainNode, audioContext]);
-
-  // Load messages from Supabase
-  useEffect(() => {
-    const loadMessages = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('messages')
-          .select('*')
-          .order('timestamp', { ascending: true })
-          .limit(200); // Increased limit for better history
-
-        if (error) throw error;
-        if (data) {
-          setMessages(data);
-          
-          // Check for mentions in loaded messages
-          data.forEach(msg => {
-            if (msg.username !== username) {
-              checkForMentions(msg.message);
-            }
-          });
-        }
-      } catch (error) {
-        console.error('Error loading messages:', error);
-      }
-    };
-
-    loadMessages();
-  }, [username]);
-
-  // Request notification permission
-  useEffect(() => {
-    if ('Notification' in window && Notification.permission === 'default') {
-      Notification.requestPermission();
-    }
-  }, []);
-
-  // Filter messages based on search
-  const filteredMessages = messages.filter(msg => 
-    chatSearch === '' || 
-    msg.message.toLowerCase().includes(chatSearch.toLowerCase()) ||
-    msg.username.toLowerCase().includes(chatSearch.toLowerCase())
-  );
-
-  // Clear unread mentions when user views chat
-  const clearUnreadMentions = () => {
-    setUnreadMentions(0);
-  };
 
   // Moving timestamp for exclusive tracks
   useEffect(() => {
@@ -332,40 +274,12 @@ export default function RadioClient() {
             timestamp: payload.new.timestamp || new Date().toLocaleTimeString()
           };
           setMessages(prev => [...prev, newMessage]);
-          
-          // Check for mentions in real-time messages from other users
-          if (payload.new.username !== username) {
-            checkForMentions(payload.new.message);
-          }
         }
       });
 
       channel.subscribe();
     }
   }, []);
-
-  // Check if a message mentions a username
-  const checkForMentions = (messageText: string) => {
-    const mentionRegex = /@(\w+)/g;
-    const mentions = messageText.match(mentionRegex);
-    if (mentions) {
-      mentions.forEach(mention => {
-        const mentionedUsername = mention.substring(1); // Remove @ symbol
-        if (mentionedUsername === username && username !== '') {
-          // Show notification for mention
-          if (showNotifications && 'Notification' in window && Notification.permission === 'granted') {
-            new Notification(`@${mentionedUsername} mentioned you!`, {
-              body: messageText,
-              icon: '/favicon.ico',
-              tag: 'mention'
-            });
-          }
-          // Increment unread mentions counter
-          setUnreadMentions(prev => prev + 1);
-        }
-      });
-    }
-  };
 
   const sendMessage = async () => {
     if (!newMessage.trim() || !username.trim()) return;
@@ -378,10 +292,6 @@ export default function RadioClient() {
     };
 
     setMessages(prev => [...prev, message]);
-    
-    // Check for mentions in the new message
-    checkForMentions(newMessage);
-    
     setNewMessage('');
 
     try {
@@ -455,11 +365,6 @@ export default function RadioClient() {
       const streamGainValue = (1 - crossfader) * newVolume * volume;
       streamGainNode.gain.setValueAtTime(streamGainValue, audioContext.currentTime);
       console.log('Stream volume changed to:', newVolume, 'Gain:', streamGainValue);
-      
-      // Also update the audio element volume for immediate feedback
-      if (audioRef.current) {
-        audioRef.current.volume = newVolume;
-      }
     }
   };
 
@@ -472,11 +377,6 @@ export default function RadioClient() {
       const exclusiveGainValue = crossfader * newVolume;
       exclusiveGainNode.gain.setValueAtTime(exclusiveGainValue, audioContext.currentTime);
       console.log('Exclusive volume changed to:', newVolume, 'Gain:', exclusiveGainValue);
-      
-      // Also update the exclusive audio element volume for immediate feedback
-      if (exclusiveAudioRef.current) {
-        exclusiveAudioRef.current.volume = newVolume;
-      }
     }
   };
 
@@ -1052,83 +952,18 @@ export default function RadioClient() {
             </div>
           )}
           
-          {/* Chat Search and Controls */}
-          <div className="mb-3 space-y-2">
-            <div className="flex items-center gap-2">
-              <input
-                type="text"
-                placeholder="Search chat messages..."
-                value={chatSearch}
-                onChange={(e) => setChatSearch(e.target.value)}
-                className="flex-1 bg-slate-700 text-white px-3 py-2 rounded-lg border border-slate-600 focus:outline-none focus:border-blue-500"
-              />
-              <button
-                onClick={() => setChatSearch('')}
-                className="bg-slate-600 hover:bg-slate-500 text-white px-3 py-2 rounded-lg text-sm"
-              >
-                Clear
-              </button>
-            </div>
-            
-            {/* Notification Controls */}
-            <div className="flex items-center justify-between text-sm">
-              <div className="flex items-center gap-2">
-                <label className="flex items-center gap-2 text-slate-300">
-                  <input
-                    type="checkbox"
-                    checked={showNotifications}
-                    onChange={(e) => setShowNotifications(e.target.checked)}
-                    className="rounded"
-                  />
-                  Show notifications
-                </label>
-              </div>
-              {unreadMentions > 0 && (
-                <div className="bg-red-500 text-white px-2 py-1 rounded-full text-xs">
-                  {unreadMentions} mention{unreadMentions > 1 ? 's' : ''}
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div 
-            className="h-64 overflow-y-auto border border-slate-600 rounded-lg p-3 mb-4 bg-slate-700"
-            onClick={clearUnreadMentions}
-          >
-            {filteredMessages.map((msg) => (
+          <div className="h-64 overflow-y-auto border border-slate-600 rounded-lg p-3 mb-4 bg-slate-700">
+            {messages.map((msg) => (
               <div key={msg.id} className="mb-2">
                 <span className="font-semibold text-blue-400">{msg.username}:</span>
                 <span className="ml-2 text-slate-200">{msg.message}</span>
                 <span className="ml-2 text-xs text-slate-400">{msg.timestamp}</span>
               </div>
             ))}
-            {filteredMessages.length === 0 && chatSearch !== '' && (
-              <div className="text-slate-400 text-center py-4">
-                No messages found matching "{chatSearch}"
-              </div>
-            )}
           </div>
           
           {isSignedIn && (
-            <>
-              {/* Emoji Reactions */}
-              <div className="mb-3">
-                <p className="text-slate-300 text-sm mb-2">Add emoji reactions:</p>
-                <div className="flex flex-wrap gap-2 mb-3">
-                  {['🎧', '🎵', '🔥', '💯', '🎤', '🎶', '🌟', '🚀', '❤️', '👏', '🙌', '💃'].map((emoji) => (
-                    <button
-                      key={emoji}
-                      onClick={() => setNewMessage(prev => prev + emoji)}
-                      className="text-2xl hover:scale-110 transition-transform cursor-pointer bg-slate-700/50 rounded-lg p-2 hover:bg-slate-600/50"
-                      title={`Add ${emoji} to message`}
-                    >
-                      {emoji}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              
-              <div className="flex space-x-2">
+            <div className="flex space-x-2">
               <input
                 type="text"
                 placeholder="Type your message..."
@@ -1144,7 +979,6 @@ export default function RadioClient() {
                 Send
               </button>
             </div>
-            </>
           )}
         </div>
 
