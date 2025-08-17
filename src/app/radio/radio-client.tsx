@@ -11,12 +11,12 @@ const supabase = createClient(
 );
 
 export default function RadioClient() {
-  // Music streams - Chill & Tune Radio via Asura Hosting
+  // Music streams - All Hip Hop & R&B
   const STREAMS = [
-    { name: "Chill & Tune Radio", url: "https://a12.asurahosting.com/public/chill__tune/playlist.m3u", genre: "Hip-Hop & R&B" },
-    { name: "Chill & Tune Radio", url: "https://a12.asurahosting.com/public/chill__tune/playlist.m3u", genre: "Hip-Hop & R&B" },
-    { name: "Chill & Tune Radio", url: "https://a12.asurahosting.com/public/chill__tune/playlist.m3u", genre: "Hip-Hop & R&B" },
-    { name: "Chill & Tune Radio", url: "https://a12.asurahosting.com/public/chill__tune/playlist.m3u", genre: "Hip-Hop & R&B" }
+    { name: "PowerHitz (Pure R&B)", url: "https://stream.radiojar.com/4ywdgup3bnzuv", genre: "R&B" },
+    { name: "Hip Hop Nation", url: "https://stream.radiojar.com/4ywdgup3bnzuv", genre: "Hip-Hop" },
+    { name: "R&B Vibes", url: "https://stream.radiojar.com/4ywdgup3bnzuv", genre: "R&B" },
+    { name: "Hip Hop Classics", url: "https://stream.radiojar.com/4ywdgup3bnzuv", genre: "Hip-Hop" }
   ];
 
   // MIDI Controller Support
@@ -170,6 +170,16 @@ export default function RadioClient() {
       const newStreamGainValue = (1 - crossfader) * streamVolume;
       streamGainNode.gain.setValueAtTime(newStreamGainValue, audioContext.currentTime);
       console.log('Stream gain updated:', newStreamGainValue);
+      
+      // Also update the audio element volume for immediate feedback
+      if (audioRef.current) {
+        audioRef.current.volume = streamVolume;
+      }
+    }
+    
+    // Also update the exclusive audio element volume for immediate feedback
+    if (exclusiveAudioRef.current) {
+      exclusiveAudioRef.current.volume = exclusiveVolume;
     }
   }, [crossfader, streamVolume, exclusiveVolume, exclusiveGainNode, streamGainNode, audioContext]);
 
@@ -365,6 +375,11 @@ export default function RadioClient() {
       const streamGainValue = (1 - crossfader) * newVolume * volume;
       streamGainNode.gain.setValueAtTime(streamGainValue, audioContext.currentTime);
       console.log('Stream volume changed to:', newVolume, 'Gain:', streamGainValue);
+      
+      // Also update the audio element volume for immediate feedback
+      if (audioRef.current) {
+        audioRef.current.volume = newVolume;
+      }
     }
   };
 
@@ -377,6 +392,11 @@ export default function RadioClient() {
       const exclusiveGainValue = crossfader * newVolume;
       exclusiveGainNode.gain.setValueAtTime(exclusiveGainValue, audioContext.currentTime);
       console.log('Exclusive volume changed to:', newVolume, 'Gain:', exclusiveGainValue);
+      
+      // Also update the exclusive audio element volume for immediate feedback
+      if (exclusiveAudioRef.current) {
+        exclusiveAudioRef.current.volume = newVolume;
+      }
     }
   };
 
@@ -963,24 +983,6 @@ export default function RadioClient() {
           </div>
           
           {isSignedIn && (
-            <>
-              {/* Emoji Reactions */}
-              <div className="mb-3">
-              <p className="text-slate-300 text-sm mb-2">Add emoji reactions:</p>
-              <div className="flex flex-wrap gap-2 mb-3">
-                {['🎧', '🎵', '🔥', '💯', '🎤', '🎶', '🌟', '🚀', '❤️', '👏', '🙌', '💃'].map((emoji) => (
-                  <button
-                    key={emoji}
-                    onClick={() => setNewMessage(prev => prev + emoji)}
-                    className="text-2xl hover:scale-110 transition-transform cursor-pointer bg-slate-700/50 rounded-lg p-2 hover:bg-slate-600/50"
-                    title={`Add ${emoji} to message`}
-                  >
-                    {emoji}
-                  </button>
-                ))}
-              </div>
-            </div>
-            
             <div className="flex space-x-2">
               <input
                 type="text"
@@ -997,7 +999,6 @@ export default function RadioClient() {
                 Send
               </button>
             </div>
-            </>
           )}
         </div>
 
@@ -1413,4 +1414,4 @@ export default function RadioClient() {
        </div>
      </div>
    );
- }  // NOTE: All streams currently use the same URL for testing. Update with actual Hip-Hop & R&B streams.
+ }
