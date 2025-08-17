@@ -14,7 +14,7 @@ const supabase = createClient(
 export default function RadioClient() {
   // Music streams - All Hip Hop & R&B
   const STREAMS = [
-    { name: "PowerHitz (Pure R&B)", url: "https://stream.radiojar.com/4ywdgup3bnzuv", genre: "R&B" },
+    { name: "Chill { name: "Chill & Tune Radio", url: "https://a12.asurahosting.com/public/chill__tune/playlist.m3u", genre: "Hip-Hop & RPowerHitz (Pure R&B)", url: "https://stream.radiojar.com/4ywdgup3bnzuv", genre: "R&B"B" } Tune Radio", url: "https://a12.asurahosting.com/public/chill__tune/playlist.m3u", genre: "Hip-Hop { name: "Chill & Tune Radio", url: "https://a12.asurahosting.com/public/chill__tune/playlist.m3u", genre: "Hip-Hop & RPowerHitz (Pure R&B)", url: "https://stream.radiojar.com/4ywdgup3bnzuv", genre: "R&B"B" } R{ name: "Chill & Tune Radio", url: "https://a12.asurahosting.com/public/chill__tune/playlist.m3u", genre: "Hip-Hop & RPowerHitz (Pure R&B)", url: "https://stream.radiojar.com/4ywdgup3bnzuv", genre: "R&B"B" }B" },
     { name: "Hip Hop Nation", url: "https://stream.radiojar.com/4ywdgup3bnzuv", genre: "Hip-Hop" },
     { name: "R&B Vibes", url: "https://stream.radiojar.com/4ywdgup3bnzuv", genre: "R&B" },
     { name: "Hip Hop Classics", url: "https://stream.radiojar.com/4ywdgup3bnzuv", genre: "Hip-Hop" }
