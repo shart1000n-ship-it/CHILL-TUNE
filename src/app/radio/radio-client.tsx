@@ -980,7 +980,25 @@ export default function RadioClient() {
           </div>
           
           {isSignedIn && (
-            <div className="flex space-x-2">
+            <>
+              {/* Emoji Reactions */}
+              <div className="mb-3">
+                <p className="text-slate-300 text-sm mb-2">Add emoji reactions:</p>
+                <div className="flex flex-wrap gap-2 mb-3">
+                  {['🎧', '🎵', '🔥', '💯', '🎤', '🎶', '🌟', '🚀', '❤️', '👏', '🙌', '💃'].map((emoji) => (
+                    <button
+                      key={emoji}
+                      onClick={() => setNewMessage(prev => prev + emoji)}
+                      className="text-2xl hover:scale-110 transition-transform cursor-pointer bg-slate-700/50 rounded-lg p-2 hover:bg-slate-600/50"
+                      title={`Add ${emoji} to message`}
+                    >
+                      {emoji}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              
+              <div className="flex space-x-2">
               <input
                 type="text"
                 placeholder="Type your message..."
@@ -996,6 +1014,7 @@ export default function RadioClient() {
                 Send
               </button>
             </div>
+            </>
           )}
         </div>
 
