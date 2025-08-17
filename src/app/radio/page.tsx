@@ -19,8 +19,14 @@ export default function RadioPage() {
   const [showAdminLogin, setShowAdminLogin] = useState(false)
   const [isPlaying, setIsPlaying] = useState(false)
   const [volume, setVolume] = useState(0.5)
+  const [exclusiveVolume, setExclusiveVolume] = useState(0.5)
+  const [crossfader, setCrossfader] = useState(0.5)
+  const [isExclusivePlaying, setIsExclusivePlaying] = useState(false)
+  const [liveAudio, setLiveAudio] = useState(false)
+  const [liveVideo, setLiveVideo] = useState(false)
 
   const streamAudioRef = useRef<HTMLAudioElement>(null)
+  const exclusiveAudioRef = useRef<HTMLAudioElement>(null)
 
   useEffect(() => {
     loadChatHistory()
@@ -106,11 +112,52 @@ export default function RadioPage() {
     }
   }
 
+  const toggleExclusive = () => {
+    if (exclusiveAudioRef.current) {
+      if (isExclusivePlaying) {
+        exclusiveAudioRef.current.pause()
+      } else {
+        exclusiveAudioRef.current.play()
+      }
+    }
+  }
+
   const handleVolumeChange = (newVolume: number) => {
     setVolume(newVolume)
     if (streamAudioRef.current) {
-      streamAudioRef.current.volume = newVolume
+      streamAudioRef.current.volume = newVolume * (1 - crossfader)
     }
+  }
+
+  const handleExclusiveVolumeChange = (newVolume: number) => {
+    setExclusiveVolume(newVolume)
+    if (exclusiveAudioRef.current) {
+      exclusiveAudioRef.current.volume = newVolume * crossfader
+    }
+  }
+
+  const handleCrossfaderChange = (newCrossfader: number) => {
+    setCrossfader(newCrossfader)
+    if (streamAudioRef.current) {
+      streamAudioRef.current.volume = volume * (1 - newCrossfader)
+    }
+    if (exclusiveAudioRef.current) {
+      exclusiveAudioRef.current.volume = exclusiveVolume * newCrossfader
+    }
+  }
+
+  const toggleLiveAudio = () => {
+    setLiveAudio(!liveAudio)
+    console.log('Live audio:', !liveAudio ? 'started' : 'stopped')
+  }
+
+  const toggleLiveVideo = () => {
+    setLiveVideo(!liveVideo)
+    console.log('Live video:', !liveVideo ? 'started' : 'stopped')
+  }
+
+  const addEmoji = (emoji: string) => {
+    setNewMessage(prev => prev + emoji)
   }
 
   return (
@@ -188,7 +235,50 @@ export default function RadioPage() {
               {isAdmin && (
                 <div className="bg-slate-800/80 backdrop-blur-sm rounded-lg p-6 shadow-lg border border-purple-600">
                   <h2 className="text-2xl font-bold text-white mb-4">🎛️ DJ Console</h2>
-                  <p className="text-slate-300">Welcome to the DJ Console! More features coming soon.</p>
+                  
+                  <div className="mb-6">
+                    <h3 className="text-lg font-semibold text-white mb-3">🎵 Exclusive Track</h3>
+                    <div className="flex items-center space-x-4 mb-3">
+                      <button onClick={toggleExclusive} className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-semibold">
+                        {isExclusivePlaying ? '⏸️ Pause' : '▶️ Play'}
+                      </button>
+                      <span className="text-slate-300">{isExclusivePlaying ? 'Playing Exclusive' : 'Exclusive Ready'}</span>
+                    </div>
+                    
+                    <div className="flex items-center space-x-4">
+                      <span className="text-slate-300 text-sm">Volume:</span>
+                      <input type="range" min="0" max="1" step="0.1" value={exclusiveVolume} onChange={(e) => handleExclusiveVolumeChange(parseFloat(e.target.value))} className="flex-1" />
+                      <span className="text-sm text-slate-300 w-12">{Math.round(exclusiveVolume * 100)}%</span>
+                    </div>
+                    
+                    <audio ref={exclusiveAudioRef} src="/exclusive-track.mp3" onPlay={() => setIsExclusivePlaying(true)} onPause={() => setIsExclusivePlaying(false)} onError={(e) => console.error('Exclusive error:', e)} preload="none" />
+                  </div>
+                  
+                  <div className="mb-6">
+                    <h3 className="text-lg font-semibold text-white mb-3">🎚️ Crossfader</h3>
+                    <div className="flex items-center space-x-4">
+                      <span className="text-slate-300 text-sm">Stream</span>
+                      <input type="range" min="0" max="1" step="0.01" value={crossfader} onChange={(e) => handleCrossfaderChange(parseFloat(e.target.value))} className="flex-1" />
+                      <span className="text-slate-300 text-sm">Exclusive</span>
+                    </div>
+                    <div className="text-center text-slate-400 text-sm mt-2">Blend: {Math.round((1 - crossfader) * 100)}% Stream / {Math.round(crossfader * 100)}% Exclusive</div>
+                  </div>
+                  
+                  <div>
+                    <h3 className="text-lg font-semibold text-white mb-3">🎥 Live Broadcasting</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="text-center">
+                        <button onClick={toggleLiveAudio} className={`w-full py-3 px-4 rounded-lg font-semibold transition-all ${liveAudio ? 'bg-red-600 hover:bg-red-700 text-white' : 'bg-green-600 hover:bg-green-700 text-white'}`}>
+                          {liveAudio ? '🔴 Stop Live Audio' : '🟢 Start Live Audio'}
+                        </button>
+                      </div>
+                      <div className="text-center">
+                        <button onClick={toggleLiveVideo} className={`w-full py-3 px-4 rounded-lg font-semibold transition-all ${liveVideo ? 'bg-red-600 hover:bg-red-700 text-white' : 'bg-green-600 hover:bg-green-700 text-white'}`}>
+                          {liveVideo ? '🔴 Stop Live Video' : '🟢 Start Live Video'}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               )}
 
@@ -249,9 +339,21 @@ export default function RadioPage() {
               </div>
               
               {isSignedIn && (
-                <div className="flex space-x-2">
-                  <input type="text" placeholder="Type your message..." value={newMessage} onChange={(e) => setNewMessage(e.target.value)} onKeyPress={handleKeyPress} className="flex-1 border border-slate-600 bg-slate-700 text-white rounded-lg px-3 py-2 placeholder-slate-400" />
-                  <button onClick={sendMessage} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">Send</button>
+                <div className="space-y-3">
+                  <div className="flex flex-wrap gap-2 mb-2">
+                    <button onClick={() => addEmoji('😊')} className="text-2xl hover:scale-110 transition-transform">😊</button>
+                    <button onClick={() => addEmoji('🎵')} className="text-2xl hover:scale-110 transition-transform">🎵</button>
+                    <button onClick={() => addEmoji('🔥')} className="text-2xl hover:scale-110 transition-transform">🔥</button>
+                    <button onClick={() => addEmoji('💯')} className="text-2xl hover:scale-110 transition-transform">💯</button>
+                    <button onClick={() => addEmoji('🎉')} className="text-2xl hover:scale-110 transition-transform">🎉</button>
+                    <button onClick={() => addEmoji('❤️')} className="text-2xl hover:scale-110 transition-transform">❤️</button>
+                    <button onClick={() => addEmoji('👍')} className="text-2xl hover:scale-110 transition-transform">👍</button>
+                    <button onClick={() => addEmoji('🎧')} className="text-2xl hover:scale-110 transition-transform">🎧</button>
+                  </div>
+                  <div className="flex space-x-2">
+                    <input type="text" placeholder="Type your message..." value={newMessage} onChange={(e) => setNewMessage(e.target.value)} onKeyPress={handleKeyPress} className="flex-1 border border-slate-600 bg-slate-700 text-white rounded-lg px-3 py-2 placeholder-slate-400" />
+                    <button onClick={sendMessage} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">Send</button>
+                  </div>
                 </div>
               )}
             </div>
