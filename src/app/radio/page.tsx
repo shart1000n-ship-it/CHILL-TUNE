@@ -76,7 +76,7 @@ export default function RadioPage() {
           </div>
         </div>
         <h1 className="text-3xl font-bold mb-4">CHILL & TUNE — Pure Hip-Hop & R&B</h1>
-        <p className="text-sm text-slate-300 mb-6">24/7 Non-stop Hip-Hop & R&B Vibes</p>
+        <p className="text-sm text-slate-300 mb-6">Come Tune In & Vibe</p>
         {/* Live365 notice removed */}
         <Suspense fallback={<div>Loading player…</div>}>
           <RadioClient />
