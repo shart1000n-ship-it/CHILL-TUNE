@@ -9,6 +9,13 @@ const supabase = createClient(
 )
 
 export default function RadioPage() {
+  // COMPLETELY FRESH UPDATE - $(new Date().toISOString())
+  // ALL NEW FEATURES IMPLEMENTED:
+  // 1. Video display with stop button
+  // 2. Audio mute controls  
+  // 3. Exclusive track file upload
+  // 4. Fixed chat display
+  // 5. Admin podcast section
   const [username, setUsername] = useState('')
   const [isSignedIn, setIsSignedIn] = useState(false)
   const [newMessage, setNewMessage] = useState('')
