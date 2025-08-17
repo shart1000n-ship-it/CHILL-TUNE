@@ -9,6 +9,9 @@ const supabase = createClient(
 )
 
 export default function RadioPage() {
+  // FORCE GIT CHANGE - TIMESTAMP: $(new Date().toISOString())
+  // UNIQUE ID: $(Math.random() * 1000000)
+  // BUILD VERSION: $(Date.now())
   // COMPLETELY FRESH UPDATE - $(new Date().toISOString())
   // ALL NEW FEATURES IMPLEMENTED:
   // 1. Video display with stop button
