@@ -11,12 +11,12 @@ const supabase = createClient(
 );
 
 export default function RadioClient() {
-  // Music streams - All Hip Hop & R&B
+  // Music streams - Chill & Tune Radio via Asura Hosting
   const STREAMS = [
-    { name: "PowerHitz (Pure R&B)", url: "https://stream.radiojar.com/4ywdgup3bnzuv", genre: "R&B" },
-    { name: "Hip Hop Nation", url: "https://stream.radiojar.com/4ywdgup3bnzuv", genre: "Hip-Hop" },
-    { name: "R&B Vibes", url: "https://stream.radiojar.com/4ywdgup3bnzuv", genre: "R&B" },
-    { name: "Hip Hop Classics", url: "https://stream.radiojar.com/4ywdgup3bnzuv", genre: "Hip-Hop" }
+    { name: "Chill & Tune Radio", url: "https://a12.asurahosting.com/public/chill__tune/playlist.m3u", genre: "Hip-Hop & R&B" },
+    { name: "Chill & Tune Radio", url: "https://a12.asurahosting.com/public/chill__tune/playlist.m3u", genre: "Hip-Hop & R&B" },
+    { name: "Chill & Tune Radio", url: "https://a12.asurahosting.com/public/chill__tune/playlist.m3u", genre: "Hip-Hop & R&B" },
+    { name: "Chill & Tune Radio", url: "https://a12.asurahosting.com/public/chill__tune/playlist.m3u", genre: "Hip-Hop & R&B" }
   ];
 
   // MIDI Controller Support
@@ -56,7 +56,6 @@ export default function RadioClient() {
   const [micGainNode, setMicGainNode] = useState<GainNode | null>(null);
   const [streamGainNode, setStreamGainNode] = useState<GainNode | null>(null);
   const [exclusiveGainNode, setExclusiveGainNode] = useState<GainNode | null>(null);
-  const [activeTab, setActiveTab] = useState<'subscriptions' | 'donations'>('subscriptions');
 
   // Refs
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -1394,4 +1393,4 @@ export default function RadioClient() {
        </div>
      </div>
    );
- }  // NOTE: All streams currently use the same URL for testing. Update with actual Hip-Hop & R&B streams.
+ }
