@@ -103,6 +103,8 @@ vercel --prod
 Every push to the `main` branch will automatically trigger deployment!
 
 ---
-**Last Updated**: $(date)
+**Last Updated**: December 2024
+**Last Deployed**: December 2024
 **Version**: 1.0.0
 **Maintainer**: @SheridanHart932
+**Live URL**: https://chilltuneradio.netlify.app
