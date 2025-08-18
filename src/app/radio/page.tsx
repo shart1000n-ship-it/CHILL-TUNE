@@ -56,6 +56,17 @@ export default function RadioPage() {
   const videoRef = useRef<HTMLVideoElement>(null)
 
   // INITIALIZE ALL FEATURES
+  useEffect(() => {
+    loadChatHistory()
+    subscribeToChat()
+    loadSongRequests()
+    loadPodcasts()
+    initializeViewerTracking()
+    
+    return () => {
+      removeViewer()
+    }
+  }, [])
 
   // VIEWER COUNT SYSTEM
   const initializeViewerTracking = async () => {
@@ -133,19 +144,6 @@ export default function RadioPage() {
     }
   }
 
-
-  // INITIALIZE ALL FEATURES
-  useEffect(() => {
-    loadChatHistory()
-    subscribeToChat()
-    loadSongRequests()
-    loadPodcasts()
-    initializeViewerTracking()
-    
-    return () => {
-      removeViewer()
-    }
-  }, [initializeViewerTracking, removeViewer])
   // SONG REQUEST SYSTEM
   const loadSongRequests = () => {
     const saved = localStorage.getItem('songRequests')
@@ -179,7 +177,7 @@ export default function RadioPage() {
     setSongTitle('')
     setRequesterName('')
     
-    alert(`🎵 Song request sent: "${songTitle}" by ${artistName}"`)
+    alert(`🎵 Song request sent: &ldquo;${songTitle}&rdquo; by ${artistName}`)
   }
 
   // PODCAST SYSTEM
