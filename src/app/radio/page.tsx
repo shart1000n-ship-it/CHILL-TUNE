@@ -556,7 +556,7 @@ export default function RadioPage() {
                 
                 <audio 
                   ref={streamAudioRef}
-                  src="https://a12.asurahosting.com/public/chill__tune/playlist.m3u"
+                  src="https://a12.asurahosting.com/listen/chill__tune/radio.mp3"
                   onPlay={() => setIsPlaying(true)}
                   onPause={() => setIsPlaying(false)}
                   onError={(e) => console.error('Stream error:', e)}
