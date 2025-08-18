@@ -21,6 +21,18 @@ export default function RadioPage() {
   const [adminPassword, setAdminPassword] = useState('')
   const [showAdminLogin, setShowAdminLogin] = useState(false)
   
+  // INBOX STATE
+  const [showInbox, setShowInbox] = useState(false)
+
+  // INBOX FUNCTIONS
+  const openInbox = () => {
+    setShowInbox(true)
+  }
+
+  const closeInbox = () => {
+    setShowInbox(false)
+  }
+  
   // VIEWER COUNT FEATURES
   const [viewerCount, setViewerCount] = useState(0)
   const [isOnline, setIsOnline] = useState(false)
@@ -762,7 +774,17 @@ export default function RadioPage() {
 
               {/* SONG REQUESTS SECTION */}
               <div className="bg-slate-800/80 backdrop-blur-sm rounded-lg p-6 shadow-lg border border-green-600">
-                <h2 className="text-2xl font-bold text-white mb-4">🎵 Song Requests</h2>
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-2xl font-bold text-white">🎵 Song Requests</h2>
+                  {isAdmin && (
+                    <button
+                      onClick={openInbox}
+                      className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors"
+                    >
+                      📥 Inbox ({songRequests.length})
+                    </button>
+                  )}
+                </div>
                 <div className="space-y-4">
                   <div className="flex space-x-3">
                     <input
