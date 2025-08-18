@@ -56,17 +56,6 @@ export default function RadioPage() {
   const videoRef = useRef<HTMLVideoElement>(null)
 
   // INITIALIZE ALL FEATURES
-  useEffect(() => {
-    loadChatHistory()
-    subscribeToChat()
-    loadSongRequests()
-    loadPodcasts()
-    initializeViewerTracking()
-    
-    return () => {
-      removeViewer()
-    }
-  }, [])
 
   // VIEWER COUNT SYSTEM
   const initializeViewerTracking = async () => {
@@ -144,6 +133,19 @@ export default function RadioPage() {
     }
   }
 
+
+  // INITIALIZE ALL FEATURES
+  useEffect(() => {
+    loadChatHistory()
+    subscribeToChat()
+    loadSongRequests()
+    loadPodcasts()
+    initializeViewerTracking()
+    
+    return () => {
+      removeViewer()
+    }
+  }, [initializeViewerTracking, removeViewer])
   // SONG REQUEST SYSTEM
   const loadSongRequests = () => {
     const saved = localStorage.getItem('songRequests')
@@ -805,7 +807,7 @@ export default function RadioPage() {
                       <div className="space-y-2 max-h-32 overflow-y-auto">
                         {songRequests.slice(0, 5).map((request, index) => (
                           <div key={index} className="bg-slate-700/50 p-2 rounded-lg text-sm">
-                            <div className="text-white font-medium">"{request.song}" by {request.artist}</div>
+                            <div className="text-white font-medium">&ldquo;{request.song}&rdquo; by {request.artist}</div>
                             <div className="text-xs text-slate-300">
                               Requested by: {request.requester} • {new Date(request.timestamp).toLocaleTimeString()}
                             </div>
