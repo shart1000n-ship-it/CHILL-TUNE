@@ -750,6 +750,67 @@ export default function RadioPage() {
                           📤 Upload Episode
                         </button>
                       </div>
+                    <!-- PODCAST RECORDING SECTION -->
+                    <div class="mt-6 p-4 bg-slate-700/50 rounded-lg">
+                      <h4 class="text-lg font-semibold text-white mb-3">🎙️ Record New Episode</h4>
+                      
+                      <!-- Recording Status -->
+                      <div class="mb-4 p-3 bg-slate-600/50 rounded-lg">
+                        <div class="flex items-center justify-between mb-2">
+                          <span class="text-white font-medium">
+                            {isRecordingPodcast ? "🔴 Recording..." : "⏸️ Ready to Record"}
+                          </span>
+                          {isRecordingPodcast && (
+                            <span class="text-red-400 font-mono text-lg">
+                              {formatDuration(recordingDuration)}
+                            </span>
+                          )}
+                        </div>
+                        
+                        {recordedChunks.length > 0 && (
+                          <div class="text-green-400 text-sm">
+                            ✅ Recording complete! Ready to save or download.
+                          </div>
+                        )}
+                      </div>
+                      
+                      <!-- Recording Controls -->
+                      <div class="flex space-x-2 mb-4">
+                        {!isRecordingPodcast ? (
+                          <button
+                            onClick={startPodcastRecording}
+                            class="flex-1 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-semibold transition-colors"
+                          >
+                            ��️ Start Recording
+                          </button>
+                        ) : (
+                          <button
+                            onClick={stopPodcastRecording}
+                            class="flex-1 bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded-lg font-semibold transition-colors"
+                          >
+                            ⏹️ Stop Recording
+                          </button>
+                        )}
+                      </div>
+                      
+                      <!-- Save/Download Controls -->
+                      {recordedChunks.length > 0 && (
+                        <div class="flex space-x-2">
+                          <button
+                            onClick={saveRecordedPodcast}
+                            class="flex-1 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-semibold transition-colors"
+                          >
+                            💾 Save Episode
+                          </button>
+                          <button
+                            onClick={downloadRecordedPodcast}
+                            class="flex-1 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-semibold transition-colors"
+                          >
+                            📥 Download Audio
+                          </button>
+                        </div>
+                      )}
+                    </div>
                     </div>
                     
                     <div>
@@ -967,3 +1028,102 @@ export default function RadioPage() {
   )
 }
 // FORCE DEPLOY: Mon Aug 18 01:44:15 EDT 2025
+
+  // PODCAST RECORDING FUNCTIONS
+  const startPodcastRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      const recorder = new MediaRecorder(stream)
+      const chunks: Blob[] = []
+      
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) {
+          chunks.push(e.data)
+        }
+      }
+      
+      recorder.onstop = () => {
+        const blob = new Blob(chunks, { type: 'audio/wav' })
+        setRecordedChunks([blob])
+        stream.getTracks().forEach(track => track.stop())
+      }
+      
+      recorder.start()
+      setMediaRecorder(recorder)
+      setIsRecordingPodcast(true)
+      setRecordingDuration(0)
+      
+      // Start timer
+      const timer = setInterval(() => {
+        setRecordingDuration(prev => prev + 1)
+      }, 1000)
+      setRecordingTimer(timer)
+      
+      alert('🎙️ Recording started! Click Stop when finished.')
+    } catch (error) {
+      alert('❌ Error accessing microphone: ' + error)
+    }
+  }
+
+  const stopPodcastRecording = () => {
+    if (mediaRecorder && isRecordingPodcast) {
+      mediaRecorder.stop()
+      setIsRecordingPodcast(false)
+      
+      if (recordingTimer) {
+        clearInterval(recordingTimer)
+        setRecordingTimer(null)
+      }
+      
+      alert('⏹️ Recording stopped! You can now save or download.')
+    }
+  }
+
+  const saveRecordedPodcast = () => {
+    if (recordedChunks.length > 0 && newPodcastTitle.trim() && newPodcastDescription.trim()) {
+      const blob = recordedChunks[0]
+      const audioUrl = URL.createObjectURL(blob)
+      
+      const newPodcast = {
+        id: Date.now().toString(),
+        title: newPodcastTitle.trim(),
+        description: newPodcastDescription.trim(),
+        duration: formatDuration(recordingDuration),
+        uploadedAt: 'Just now',
+        audioUrl: audioUrl
+      }
+      
+      const updatedPodcasts = [newPodcast, ...podcasts]
+      setPodcasts(updatedPodcasts)
+      localStorage.setItem('podcasts', JSON.stringify(updatedPodcasts))
+      
+      setNewPodcastTitle('')
+      setNewPodcastDescription('')
+      setRecordedChunks([])
+      setRecordingDuration(0)
+      
+      alert('🎙️ Recorded podcast saved successfully!')
+    } else {
+      alert('❌ Please fill in title and description before saving!')
+    }
+  }
+
+  const downloadRecordedPodcast = () => {
+    if (recordedChunks.length > 0) {
+      const blob = recordedChunks[0]
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `podcast_${Date.now()}.wav`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+    }
+  }
+
+  const formatDuration = (seconds: number) => {
+    const mins = Math.floor(seconds / 60)
+    const secs = seconds % 60
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
+  }
