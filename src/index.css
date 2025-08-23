@@ -1,0 +1,95 @@
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-gradient-to-br from-martin-purple via-martin-burgundy to-martin-deep text-white;
+    font-family: 'Orbitron', monospace;
+    background-attachment: fixed;
+  }
+  
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 8px;
+  }
+  
+  ::-webkit-scrollbar-track {
+    @apply bg-martin-burgundy;
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    @apply bg-martin-gold rounded-full;
+  }
+  
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-martin-gold-light;
+  }
+}
+
+@layer components {
+  .martin-gradient {
+    @apply bg-gradient-to-r from-martin-hot-pink via-martin-electric-blue to-martin-gold;
+  }
+  
+  .neon-glow {
+    @apply shadow-[0_0_20px_rgba(255,0,128,0.6)] shadow-martin-hot-pink;
+  }
+  
+  .retro-border {
+    @apply border-2 border-martin-gold border-dashed;
+  }
+  
+  .cyber-button {
+    @apply bg-gradient-to-r from-martin-burgundy to-martin-deep 
+           border-2 border-martin-gold 
+           text-white font-bold py-3 px-6 
+           hover:from-martin-purple hover:to-martin-burgundy
+           hover:border-martin-hot-pink hover:neon-glow
+           transition-all duration-300 ease-in-out
+           transform hover:scale-105;
+  }
+  
+  .cyber-input {
+    @apply bg-martin-burgundy border-2 border-martin-gold 
+           text-white placeholder-martin-gold-light
+           focus:border-martin-hot-pink focus:neon-glow
+           transition-all duration-300
+           px-4 py-3 rounded-none;
+  }
+  
+  .video-card {
+    @apply bg-martin-burgundy border-2 border-martin-gold
+           hover:border-martin-hot-pink hover:neon-glow
+           transition-all duration-300;
+  }
+  
+  .control-button {
+    @apply bg-martin-deep border-2 border-martin-gold
+           text-white hover:bg-martin-burgundy
+       hover:border-martin-hot-pink hover:neon-glow
+       transition-all duration-200
+       p-3 rounded-full;
+  }
+  
+  .control-button.active {
+    @apply bg-martin-electric-blue border-martin-electric-blue neon-glow;
+  }
+  
+  .control-button.danger {
+    @apply bg-red-600 border-red-400
+       hover:bg-red-500 hover:border-red-300;
+  }
+}
+
+@layer utilities {
+  .text-shadow {
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+  }
+  
+  .text-glow {
+    text-shadow: 0 0 10px currentColor;
+  }
+}

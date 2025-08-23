@@ -1,13 +1,83 @@
 {
-  "buildCommand": "npm run build",
-  "installCommand": "npm install",
-  "framework": "nextjs",
+  "version": 2,
+  "name": "true-talk",
+  "builds": [
+    {
+      "src": "package.json",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "dist"
+      }
+    }
+  ],
+  "routes": [
+    {
+      "src": "/static/(.*)",
+      "dest": "/static/$1"
+    },
+    {
+      "src": "/favicon.ico",
+      "dest": "/favicon.ico"
+    },
+    {
+      "src": "/manifest.json",
+      "dest": "/manifest.json"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "DENY"
+        },
+        {
+          "key": "X-XSS-Protection",
+          "value": "1; mode=block"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin"
+        },
+        {
+          "key": "Permissions-Policy",
+          "value": "camera=(), microphone=(), geolocation=()"
+        }
+      ]
+    },
+    {
+      "source": "/static/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    }
+  ],
+  "env": {
+    "VITE_FB_API_KEY": "@vite_fb_api_key",
+    "VITE_FB_AUTH_DOMAIN": "@vite_fb_auth_domain",
+    "VITE_FB_DB_URL": "@vite_fb_db_url",
+    "VITE_FB_PROJECT_ID": "@vite_fb_project_id",
+    "VITE_FB_STORAGE": "@vite_fb_storage",
+    "VITE_FB_SENDER_ID": "@vite_fb_sender_id",
+    "VITE_FB_APP_ID": "@vite_fb_app_id"
+  },
   "functions": {
-    "src/pages/api/**/*.ts": {
-      "maxDuration": 30
+    "app/api/**/*.js": {
+      "runtime": "nodejs18.x"
     }
   },
-  "env": {
-    "NODE_ENV": "production"
-  }
+  "regions": ["iad1"],
+  "public": true
 }

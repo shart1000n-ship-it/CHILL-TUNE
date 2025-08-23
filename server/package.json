@@ -1,0 +1,19 @@
+{
+  "name": "true-talk-backend",
+  "version": "1.0.0",
+  "description": "TRUE TALK Backend Server - WebRTC signaling and room management",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.21.2",
+    "socket.io": "^4.8.1",
+    "uuid": "^9.0.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  }
+}

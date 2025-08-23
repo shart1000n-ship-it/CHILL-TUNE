@@ -1,0 +1,521 @@
+import React, { useState, useEffect } from 'react';
+import { useAuth } from '../contexts/AuthContext';
+import GifPicker from './GifPicker';
+
+interface Post {
+  id: string;
+  user: {
+    id: string;
+    username: string;
+    firstName: string;
+    lastName: string;
+    avatar: string;
+  };
+  content: string;
+  image?: string;
+  gif?: {
+    id: string;
+    title: string;
+    url: string;
+  };
+  timestamp: Date;
+  likes: number;
+  comments: number;
+  reactions: {
+    [key: string]: number;
+  };
+  userReaction?: string;
+}
+
+const Feed: React.FC = () => {
+  const { user } = useAuth();
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [newPost, setNewPost] = useState('');
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [selectedGif, setSelectedGif] = useState<{id: string, title: string, url: string} | null>(null);
+  const [showGifPicker, setShowGifPicker] = useState(false);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+
+  const reactionEmojis = ['❤️', '😂', '😮', '😢', '😡', '👏', '🔥', '💯'];
+
+  useEffect(() => {
+    loadPosts();
+  }, []);
+
+  const loadPosts = async () => {
+    // Mock posts data
+    const mockPosts: Post[] = [
+      {
+        id: '1',
+        user: {
+          id: '1',
+          username: 'sarah_j',
+          firstName: 'Sarah',
+          lastName: 'Johnson',
+          avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=sarah',
+        },
+        content: 'Just finished an amazing workout! 💪 Feeling energized and ready to conquer the day. What are your fitness goals?',
+        timestamp: new Date(Date.now() - 1000 * 60 * 30),
+        likes: 24,
+        comments: 8,
+        reactions: { '❤️': 15, '🔥': 6, '👏': 3 },
+        userReaction: '❤️',
+      },
+      {
+        id: '2',
+        user: {
+          id: '2',
+          username: 'mike_chen',
+          firstName: 'Mike',
+          lastName: 'Chen',
+          avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=mike',
+        },
+        content: 'Check out this incredible sunset from my hike today! Nature never fails to amaze me.',
+        image: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=600&h=400&fit=crop',
+        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2),
+        likes: 42,
+        comments: 12,
+        reactions: { '❤️': 28, '😮': 10, '🔥': 4 },
+        userReaction: '😮',
+      },
+      {
+        id: '3',
+        user: {
+          id: '3',
+          username: 'emma_w',
+          firstName: 'Emma',
+          lastName: 'Wilson',
+          avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=emma',
+        },
+        content: 'Can\'t stop laughing at this! 😂',
+        gif: {
+          id: '1',
+          title: 'Funny reaction',
+          url: 'https://media.giphy.com/media/3o7abKhOpu0NwenH3O/giphy.gif',
+        },
+        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 4),
+        likes: 67,
+        comments: 23,
+        reactions: { '😂': 45, '❤️': 18, '🔥': 4 },
+        userReaction: '😂',
+      },
+      {
+        id: '4',
+        user: {
+          id: '4',
+          username: 'david_r',
+          firstName: 'David',
+          lastName: 'Rodriguez',
+          avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=david',
+        },
+        content: 'Just launched my new project! 🚀 Excited to share it with everyone. Hard work pays off!',
+        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 6),
+        likes: 89,
+        comments: 31,
+        reactions: { '🔥': 52, '👏': 25, '❤️': 12 },
+        userReaction: '🔥',
+      },
+      {
+        id: '5',
+        user: {
+          id: '5',
+          username: 'alex_t',
+          firstName: 'Alex',
+          lastName: 'Thompson',
+          avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=alex',
+        },
+        content: 'Coffee time! ☕ Perfect way to start a productive day. What\'s your morning routine?',
+        image: 'https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=600&h=400&fit=crop',
+        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 8),
+        likes: 35,
+        comments: 15,
+        reactions: { '❤️': 22, '🔥': 8, '😮': 5 },
+      },
+    ];
+
+    setPosts(mockPosts);
+  };
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setSelectedImage(file);
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setImagePreview(e.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleGifSelect = (gif: {id: string, title: string, url: string}) => {
+    setSelectedGif(gif);
+    setShowGifPicker(false);
+  };
+
+  const removeImage = () => {
+    setSelectedImage(null);
+    setImagePreview(null);
+  };
+
+  const removeGif = () => {
+    setSelectedGif(null);
+  };
+
+  const createPost = async () => {
+    if (!newPost.trim() && !selectedImage && !selectedGif) return;
+
+    const post: Post = {
+      id: Date.now().toString(),
+      user: {
+        id: user!.id,
+        username: user!.username,
+        firstName: user!.firstName,
+        lastName: user!.lastName,
+        avatar: user!.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user!.username}`,
+      },
+      content: newPost.trim(),
+      image: imagePreview || undefined,
+      gif: selectedGif || undefined,
+      timestamp: new Date(),
+      likes: 0,
+      comments: 0,
+      reactions: {},
+    };
+
+    setPosts([post, ...posts]);
+    setNewPost('');
+    setSelectedImage(null);
+    setSelectedGif(null);
+    setImagePreview(null);
+  };
+
+  const handleReaction = (postId: string, emoji: string) => {
+    setPosts(posts.map(post => {
+      if (post.id === postId) {
+        const currentReaction = post.userReaction;
+        const newReactions = { ...post.reactions };
+        
+        // Remove previous reaction if exists
+        if (currentReaction && newReactions[currentReaction]) {
+          newReactions[currentReaction]--;
+          if (newReactions[currentReaction] === 0) {
+            delete newReactions[currentReaction];
+          }
+        }
+        
+        // Add new reaction
+        if (currentReaction === emoji) {
+          // Remove reaction if clicking the same emoji
+          return { ...post, userReaction: undefined, reactions: newReactions };
+        } else {
+          // Add new reaction
+          newReactions[emoji] = (newReactions[emoji] || 0) + 1;
+          return { ...post, userReaction: emoji, reactions: newReactions };
+        }
+      }
+      return post;
+    }));
+  };
+  const toggleComments = (postId: string) => {
+    setShowComments(prev => ({
+      ...prev,
+      [postId]: !prev[postId]
+    }));
+  };
+
+  const addComment = (postId: string) => {
+    const commentText = commentInputs[postId]?.trim();
+    if (!commentText || !user) return;
+
+    const newComment: Comment = {
+      id: Date.now().toString(),
+      user: {
+        id: user.id,
+        username: user.username,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        avatar: user.avatar,
+      },
+      content: commentText,
+      timestamp: new Date(),
+    };
+
+    setPosts(posts.map(post => {
+      if (post.id === postId) {
+        return {
+          ...post,
+          comments: [...post.comments, newComment]
+        };
+      }
+      return post;
+    }));
+
+    setCommentInputs(prev => ({
+      ...prev,
+      [postId]: ""
+    }));
+  };
+
+  const handleCommentInputChange = (postId: string, value: string) => {
+    setCommentInputs(prev => ({
+      ...prev,
+      [postId]: value
+    }));
+  };
+
+  const formatTimestamp = (timestamp: Date) => {
+    const now = new Date();
+    const diff = now.getTime() - timestamp.getTime();
+    const minutes = Math.floor(diff / (1000 * 60));
+    const hours = Math.floor(diff / (1000 * 60 * 60));
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+
+    if (minutes < 1) return 'Just now';
+    if (minutes < 60) return `${minutes}m ago`;
+    if (hours < 24) return `${hours}h ago`;
+    return `${days}d ago`;
+  };
+
+  return (
+    <div className="min-h-screen py-8 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-2xl mx-auto">
+        {/* Create Post */}
+        <div className="card mb-8">
+          <div className="flex items-start space-x-3 mb-4">
+            <img
+              src={user?.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.username}`}
+              alt={user?.firstName}
+              className="w-10 h-10 rounded-full"
+            />
+            <div className="flex-1">
+              <textarea
+                value={newPost}
+                onChange={(e) => setNewPost(e.target.value)}
+                placeholder="What's on your mind?"
+                className="w-full bg-transparent border-none text-white placeholder-white/60 resize-none focus:outline-none text-lg"
+                rows={3}
+              />
+            </div>
+          </div>
+
+          {/* Image/GIF Preview */}
+          {(imagePreview || selectedGif) && (
+            <div className="relative mb-4">
+              {imagePreview && (
+                <div className="relative">
+                  <img
+                    src={imagePreview}
+                    alt="Preview"
+                    className="w-full max-h-96 object-cover rounded-lg"
+                  />
+                  <button
+                    onClick={removeImage}
+                    className="absolute top-2 right-2 bg-black/50 text-white p-1 rounded-full hover:bg-black/70"
+                  >
+                    ✕
+                  </button>
+                </div>
+              )}
+              {selectedGif && (
+                <div className="relative">
+                  <img
+                    src={selectedGif.url}
+                    alt={selectedGif.title}
+                    className="w-full max-h-96 object-cover rounded-lg"
+                  />
+                  <button
+                    onClick={removeGif}
+                    className="absolute top-2 right-2 bg-black/50 text-white p-1 rounded-full hover:bg-black/70"
+                  >
+                    ✕
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Post Actions */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <label className="cursor-pointer">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageChange}
+                  className="hidden"
+                />
+                <span className="text-white/60 hover:text-white p-2 rounded-lg hover:bg-white/10 transition-colors">
+                  📷
+                </span>
+              </label>
+              <button
+                onClick={() => setShowGifPicker(true)}
+                className="text-white/60 hover:text-white p-2 rounded-lg hover:bg-white/10 transition-colors"
+              >
+                🎬
+              </button>
+            </div>
+            <button
+              onClick={createPost}
+              disabled={!newPost.trim() && !selectedImage && !selectedGif}
+              className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Post
+            </button>
+          </div>
+        </div>
+
+        {/* Posts Feed */}
+        <div className="space-y-6">
+          {posts.map((post) => (
+            <div key={post.id} className="card">
+              {/* Post Header */}
+              <div className="flex items-center space-x-3 mb-4">
+                <img
+                  src={post.user.avatar}
+                  alt={post.user.firstName}
+                  className="w-10 h-10 rounded-full"
+                />
+                <div className="flex-1">
+                  <div className="font-semibold text-white">
+                    {post.user.firstName} {post.user.lastName}
+                  </div>
+                  <div className="text-white/60 text-sm">
+                    @{post.user.username} • {formatTimestamp(post.timestamp)}
+                  </div>
+                </div>
+              </div>
+
+              {/* Post Content */}
+              <div className="mb-4">
+                <p className="text-white text-lg mb-3">{post.content}</p>
+                {post.image && (
+                  <img
+                    src={post.image}
+                    alt="Post"
+                    className="w-full rounded-lg"
+                  />
+                )}
+                {post.gif && (
+                  <img
+                    src={post.gif.url}
+                    alt={post.gif.title}
+                    className="w-full rounded-lg"
+                  />
+                )}
+              </div>
+
+              {/* Post Stats */}
+              <div className="flex items-center justify-between text-white/60 text-sm mb-4">
+                <span>{post.likes} likes</span>
+                <span>{post.comments} comments</span>
+              </div>
+
+              {/* Reactions */}
+              <div className="mb-4">
+                <div className="flex items-center space-x-2 mb-2">
+                  {Object.entries(post.reactions).map(([emoji, count]) => (
+                    <span
+                      key={emoji}
+                      className="bg-white/10 text-white px-2 py-1 rounded-full text-sm"
+                    >
+                      {emoji} {count}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex items-center justify-between border-t border-white/20 pt-4">
+                <div className="flex items-center space-x-6">
+                  {reactionEmojis.map((emoji) => (
+                    <button
+                      key={emoji}
+                      onClick={() => handleReaction(post.id, emoji)}
+                      className={`text-lg hover:scale-110 transition-transform ${
+                        post.userReaction === emoji ? 'scale-110' : ''
+                      }`}
+                      title={emoji}
+                    >
+                      {emoji}
+                    </button>
+                  ))}
+                </div>
+                <button onClick={() => toggleComments(post.id)} className="text-white/60 hover:text-white transition-colors">
+                  💬 Comment
+              </div>
+
+              {/* Comments Section */}
+              {showComments[post.id] && (
+                <div className="border-t border-white/20 pt-4 mt-4">
+                  {/* Existing Comments */}
+                  <div className="space-y-3 mb-4">
+                    {post.comments.map((comment) => (
+                      <div key={comment.id} className="flex items-start space-x-3">
+                        <img
+                          src={comment.user.avatar}
+                          alt={comment.user.firstName}
+                          className="w-8 h-8 rounded-full flex-shrink-0"
+                        />
+                        <div className="flex-1">
+                          <div className="bg-white/10 rounded-lg p-3">
+                            <div className="flex items-center space-x-2 mb-1">
+                              <span className="font-semibold text-white text-sm">
+                                {comment.user.firstName} {comment.user.lastName}
+                              </span>
+                              <span className="text-white/40 text-xs">
+                                {formatTimestamp(comment.timestamp)}
+                              </span>
+                            </div>
+                            <p className="text-white/80 text-sm">{comment.content}</p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Add Comment */}
+                  <div className="flex items-center space-x-3">
+                    <img
+                      src={user?.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.username}`}
+                      alt={user?.firstName}
+                      className="w-8 h-8 rounded-full flex-shrink-0"
+                    />
+                    <div className="flex-1 flex space-x-2">
+                      <input
+                        type="text"
+                        value={commentInputs[post.id] || ""}
+                        onChange={(e) => handleCommentInputChange(post.id, e.target.value)}
+                        placeholder="Write a comment..."
+                        className="flex-1 bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
+                      />
+                      <button
+                        onClick={() => addComment(post.id)}
+                        disabled={!commentInputs[post.id]?.trim()}
+                        className="bg-purple-600 hover:bg-purple-700 disabled:bg-gray-600 text-white px-4 py-2 rounded-lg text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        Post
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* GIF Picker Modal */}
+      <GifPicker
+        isOpen={showGifPicker}
+        onClose={() => setShowGifPicker(false)}
+        onSelectGif={handleGifSelect}
+      />
+    </div>
+  );
+};
+
+export default Feed;
